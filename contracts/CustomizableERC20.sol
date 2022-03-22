@@ -42,12 +42,12 @@ contract CustomizableERC20 is Multicall, Ownable {
     constructor() {}
     
     // Initialization Functions
-    function setName(string memory name) public onlyOwner {
-        _name = name;
+    function setName(string memory newName) public onlyOwner {
+        _name = newName;
     }
     
-    function setSymbol(string memory symbol) public onlyOwner {
-        _symbol = symbol;
+    function setSymbol(string memory newSymbol) public onlyOwner {
+        _symbol = newSymbol;
     }
     
     function setRedistributionForAddress(address recipient, int256 redistribution) public onlyOwner {
@@ -114,8 +114,8 @@ contract CustomizableERC20 is Multicall, Ownable {
         _balances[msg.sender] -= correctedValue.toInt();
         _balances[to] += correctedValue.mul(realDistributionMultiplier).toInt();
         _privateRedistributionAmount += correctedValue.mul(privateRedistributionMultiplier).toInt();
-        _totalSupply = correctedValue.mul(_totalRedistribution.fromInt()).div((10 ** 18).fromInt()).toInt();
-        _holderRedistributionAmount = _holderRedistributionAmount.fromInt().mul(correctedValue).div(_totalSupply.fromInt()).toInt();
+        _totalSupply -= correctedValue.mul(1.fromInt().sub(_totalRedistribution.fromInt()).div((10 ** 18).fromInt())).toInt();
+        _holderRedistributionAmount = _holderRedistributionAmount.fromInt().mul(holderRedistributionMultiplier).mul(correctedValue).div(_totalSupply.fromInt()).toInt();
         emit Transfer(msg.sender, to, value);
         balanceOf(msg.sender); // Reverts if < 0
         return true;
@@ -131,8 +131,8 @@ contract CustomizableERC20 is Multicall, Ownable {
         _balances[from] -= correctedValue.toInt();
         _balances[to] += correctedValue.mul(realDistributionMultiplier).toInt();
         _privateRedistributionAmount += correctedValue.mul(privateRedistributionMultiplier).toInt();
-        _totalSupply = correctedValue.mul(_totalRedistribution.fromInt()).div((10 ** 18).fromInt()).toInt();
-        _holderRedistributionAmount = _holderRedistributionAmount.fromInt().mul(correctedValue).div(_totalSupply.fromInt()).toInt();
+        _totalSupply -= correctedValue.mul(1.fromInt().sub(_totalRedistribution.fromInt()).div((10 ** 18).fromInt())).toInt();
+       _holderRedistributionAmount = _holderRedistributionAmount.fromInt().mul(holderRedistributionMultiplier).mul(correctedValue).div(_totalSupply.fromInt()).toInt();
         emit Transfer(from, to, value);
         allowance(from, msg.sender); // Reverts if < 0
         balanceOf(from); // Reverts if < 0
