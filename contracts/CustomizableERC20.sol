@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "https://github.com/abdk-consulting/abdk-libraries-solidity/blob/v3.0/ABDKMathQuad.sol";
 
-contract CustomizableERC777 is Multicall, Ownable {
+contract CustomizableERC20 is Multicall, Ownable {
     // Libraries
     using SafeCast for *;
     using ABDKMathQuad for *;
