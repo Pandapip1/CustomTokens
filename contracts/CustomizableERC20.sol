@@ -20,23 +20,20 @@ contract CustomizableERC20 is Multicall, Ownable {
     string private _name = "Uninitialized Token";
     string private _symbol = "UNINIT";
     
-    mapping(address => int256) private _privateRedistribution;
-    int256 private _holderRedistribution = 0;
-    int256 private _transferDistribution = 0;
-    
-    // Derived Config
-    int256 private _totalRedistribution = 0;
-    
-    int256 private _totalPrivateRedistribution = 0;
+    mapping(address => uint256) private _privateDistribution;
+    uint256 private _totalPrivateDistribution = 0;
+    uint256 private _holderDistribution = 0;
+    uint256 private _transferDistribution = 0;
     
     // State
-    mapping(address => int256) private _balances; // Standard ERC20 stuff
+    mapping(address => uint256) private _balances; // Standard ERC20 stuff
+    mapping(address => uint256) private _balanceDebts;
     mapping(address => mapping(address => uint256)) private _allowances; // More standard ERC20 stuff
-    int256 private _totalSupply = 0;
+    uint256 private _totalSupply = 0;
     
-    int256 private _holderRedistributionAmount = 10**18; // Amount to multiply final balances by
+    uint256 private _holderDistributionAmount = 10**18; // Amount to multiply final balances by
     
-    int256 private _privateRedistributionAmount = 0; // Amount to add to balances
+    uint256 private _privateDistributionAmount = 0; // Amount to add to balances
     
     // Constructor
     constructor() {}
@@ -50,54 +47,104 @@ contract CustomizableERC20 is Multicall, Ownable {
         _symbol = newSymbol;
     }
     
-    function setRedistributionForAddress(address recipient, int256 redistribution) public onlyOwner {
-        int256 redistributionChange = redistribution - _privateRedistribution[recipient];
-        _totalRedistribution += redistributionChange;
-        _totalPrivateRedistribution += redistributionChange;
-        _privateRedistribution[recipient] = redistribution;
+    function setDistributionForAddress(address recipient, uint256 distribution) public onlyOwner {
+        _totalPrivateDistribution += distribution;
+        _totalPrivateDistribution -= _privateDistribution[recipient];
+
+        _privateDistribution[recipient] = distribution;
     }
     
-    function setRedistributionForHolders(int256 redistribution) public onlyOwner {
-        int256 redistributionChange = redistribution - _holderRedistribution;
-        _totalRedistribution += redistributionChange;
-        _holderRedistribution = redistribution;
+    function setDistributionForHolders(uint256 distribution) public onlyOwner {
+        _holderDistribution = distribution;
     }
     
-    function setAmountTransferred(int256 distribution) public onlyOwner {
-        int256 distributionChange = distribution - _transferDistribution;
-        _totalRedistribution += distributionChange;
+    function setAmountTransferred(uint256 distribution) public onlyOwner {
         _transferDistribution = distribution;
     }
     
     function setBalance(address recipient, int256 amount) public onlyOwner {
-        int256 supplyChange = amount - _balances[recipient];
-        _totalSupply += supplyChange;
+        _totalSupply += amount;
+        _totalSupply -= _balances[recipient];
+        
         _balances[recipient] = amount;
     }
     
     // Custom Getters for Custom Initialization
     function name() public view returns (string memory) {
+        if (owner() != address(0)) {
+            return "Uninitialized Token";
+        }
         return _name;
     }
     
     function symbol() public view returns (string memory) {
+        if (owner() != address(0)) {
+            return "UNINIT";
+        }
         return _symbol;
     }
     
     function decimals() public pure returns (uint8) {
         return 18;
     }
+
+    // Helpers (these use "true tokens")
+    function _getTrueBalance(address toGet) internal view returns (uint256) {
+        return _balances[toGet] + _privateDistributionAmount.fromUInt().mul(_privateDistribution[toGet].fromUInt()).div((10 ** 18).fromUInt()).toUInt() - _balanceDebts[toGet];
+    }
+
+    function _distributeTrueAmount(uint256 amount) internal {
+        _holderDistributionAmount = _holderDistributionAmount.fromUInt().div(_totalSupply.fromUInt()).mul(amount.fromUInt()).toUInt();
+        _privateDistributionAmount += amount;
+        _totalSupply += amount;
+    }
+
+    function _simplifyTrueDebts(address toSimplify) internal {
+        if (_balances[toSimplify] > _balanceDebts[toSimplify]) {
+            _balances[toSimplify] -= balanceDebts[toSimplify];
+            _balanceDebts[toSimplify] = 0;
+        } else {
+            _balanceDebts[toSimplify] -= _balances[toSimplify];
+            _balances[toSimplify] = 0;
+        }
+    }
+
+    function _subtractTrueBalance(address from, uint256 amount) internal {
+        require(_getTrueBalance(from) > amount, "User doesn't have enough balance");
+        
+        _balanceDebts[from] += amount;
+        _totalSupply -= amount;
+        _simplifyTrueDebts(from);
+    }
+
+    function _addTrueBalance(address to, uint256 amount) internal {
+        _balances[to] += amount;
+        _totalSupply += amount;
+        _simplifyTrueDebts(to);
+    }
+
+    function _transferTrue(address from, address to, uint256 amount) internal {
+        _subtractTrueBalance(from, amount);
+        _addTrueBalance(to, amount.fromUInt().mul(_transferDistribution.fromUInt()).div((10 ** 18).fromUInt()).toUInt());
+        _distributeAmount(amount.fromUInt().mul((_totalPrivateDistribution + _holderDistribution).fromUInt()).div((10 ** 18).fromUInt()).toUInt());
+    }
+
+    // Helpers
+    function _trueToVisible(uint256 amount) internal view returns (uint256) {
+        return amount.fromUInt().mul(_holderDistributionAmount).div((10 ** 18).fromUInt()).toUInt();
+    }
     
+    function _visibleToTrue(uint256 amount) internal view returns (uint256) {
+        return amount.fromUInt().mul((10 ** 18).fromUInt()).div(_holderDistributionAmount).toUInt();
+    }
+
     // Custom Getters for ERC20 Properties
     function totalSupply() public view returns (uint256) {
-        return _totalSupply.toUint256();
+        return _trueToVisible(_totalSupply);
     }
     
     function balanceOf(address holder) public view returns (uint256 balance) {
-        bytes16 originalOwnerBalance = _balances[holder].fromInt();
-        bytes16 privateRedistributionAddon = _privateRedistributionAmount.fromInt().mul(_privateRedistribution[holder].fromInt()).div(_totalPrivateRedistribution.fromInt());
-        bytes16 holderMultiplier = _holderRedistributionAmount.fromInt().div((10 ** 18).fromInt());
-        return originalOwnerBalance.add(privateRedistributionAddon).mul(holderMultiplier).toUInt();
+        return _trueToVisible(_getTrueBalance(holder));
     }
     
     function allowance(address holder, address spender) public view returns (uint256 remaining) {
@@ -106,40 +153,26 @@ contract CustomizableERC20 is Multicall, Ownable {
     
     // Custom Methods for ERC20 Properties
     function transfer(address to, uint256 value) public returns (bool success) {
-        bytes16 holderMultiplier = _holderRedistributionAmount.fromInt().div((10 ** 18).fromInt());
-        bytes16 holderRedistributionMultiplier = _holderRedistribution.fromInt().div((10 ** 18).fromInt());
-        bytes16 privateRedistributionMultiplier = _totalPrivateRedistribution.fromInt().div((10 ** 18).fromInt());
-        bytes16 realDistributionMultiplier = _transferDistribution.fromInt().div((10 ** 18).fromInt());
-        bytes16 correctedValue = value.fromUInt().div(holderMultiplier);
-        _balances[msg.sender] -= correctedValue.toInt();
-        _balances[to] += correctedValue.mul(realDistributionMultiplier).toInt();
-        _privateRedistributionAmount += correctedValue.mul(privateRedistributionMultiplier).toInt();
-        _totalSupply -= correctedValue.mul(1.fromInt().sub(_totalRedistribution.fromInt()).div((10 ** 18).fromInt())).toInt();
-        _holderRedistributionAmount = _holderRedistributionAmount.fromInt().mul(holderRedistributionMultiplier).mul(correctedValue).div(_totalSupply.fromInt()).toInt();
-        emit Transfer(msg.sender, to, value);
-        balanceOf(msg.sender); // Reverts if < 0
+        require(owner() == address(0), "Token not initialized");
+
+        _transferTrue(msg.sender, to, _visibleToTrue(value));
+        emit Transfer(from, to, value);
         return true;
     }
     
     function transferFrom(address from, address to, uint256 value) public returns (bool success) {
-        bytes16 holderMultiplier = _holderRedistributionAmount.fromInt().div((10 ** 18).fromInt());
-        bytes16 holderRedistributionMultiplier = _holderRedistribution.fromInt().div((10 ** 18).fromInt());
-        bytes16 privateRedistributionMultiplier = _totalPrivateRedistribution.fromInt().div((10 ** 18).fromInt());
-        bytes16 realDistributionMultiplier = _transferDistribution.fromInt().div((10 ** 18).fromInt());
-        bytes16 correctedValue = value.fromUInt().div(holderMultiplier);
-        _allowances[from][msg.sender] -= correctedValue.toUInt();
-        _balances[from] -= correctedValue.toInt();
-        _balances[to] += correctedValue.mul(realDistributionMultiplier).toInt();
-        _privateRedistributionAmount += correctedValue.mul(privateRedistributionMultiplier).toInt();
-        _totalSupply -= correctedValue.mul(1.fromInt().sub(_totalRedistribution.fromInt()).div((10 ** 18).fromInt())).toInt();
-       _holderRedistributionAmount = _holderRedistributionAmount.fromInt().mul(holderRedistributionMultiplier).mul(correctedValue).div(_totalSupply.fromInt()).toInt();
+        require(owner() == address(0), "Token not initialized");
+        require(_allowances[msg.sender][from] >= value, "Not enough allowance");
+
+        _allowances[msg.sender][from] -= value;
+        _transferTrue(from, to, _visibleToTrue(value));
         emit Transfer(from, to, value);
-        allowance(from, msg.sender); // Reverts if < 0
-        balanceOf(from); // Reverts if < 0
         return true;
     }
     
     function approve(address spender, uint256 value) public returns (bool success) {
+        require(owner() == address(0), "Token not initialized");
+
         _allowances[msg.sender][spender] = value;
         emit Approval(msg.sender, spender, value);
         return true;
