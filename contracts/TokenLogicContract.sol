@@ -49,12 +49,20 @@ contract TokenLogicContract is Multicall, Ownable, ERC2771Context {
 
     // Modifier
     modifier onlyTokenOwner(uint256 tokenId) {
-        require(_msgSender() == _owners[tokenId]);
+        TokenLogicContract parent = TokenLogicContract(this);
+        while (!_isWaitingOnParent && address(parent) != address(0) && !parent._tokenMetaLoaded[tokenId]) {
+            parent = parent._parent;
+        }
+        require(_msgSender() == parent._owners[tokenId]);
         _;
     }
 
     modifier onlyTokenInitialized(uint256 tokenId) {
-        require(_owners[tokenId] == address(0) && _doesTokenExist[tokenId]);
+        TokenLogicContract parent = TokenLogicContract(this);
+        while (!_isWaitingOnParent && address(parent) != address(0) && !parent._tokenMetaLoaded[tokenId]) {
+            parent = parent._parent;
+        }
+        require(parent._owners[tokenId] == address(0) && parent._doesTokenExist[tokenId]);
         _;
     }
 
@@ -154,47 +162,55 @@ contract TokenLogicContract is Multicall, Ownable, ERC2771Context {
         return _nextTokenId - 1;
     }
 
-    function setName(uint256 tokenId, string memory newName) public onlyUnlocked onlyTokenOwner(tokenId) {
+    function setName(uint256 tokenId, string memory newName) public onlyUnlocked updateTokenParent(tokenId) onlyTokenOwner(tokenId) {
         _name[tokenId] = newName;
     }
     
-    function setSymbol(uint256 tokenId, string memory newSymbol) public onlyUnlocked onlyTokenOwner(tokenId) {
+    function setSymbol(uint256 tokenId, string memory newSymbol) public onlyUnlocked updateTokenParent(tokenId) onlyTokenOwner(tokenId) {
         _symbol[tokenId] = newSymbol;
     }
     
-    function setDistributionForAddress(uint256 tokenId, address recipient, uint256 distribution) public onlyUnlocked onlyTokenOwner(tokenId) {
+    function setDistributionForAddress(uint256 tokenId, address recipient, uint256 distribution) public onlyUnlocked updateTokenParent(tokenId) onlyTokenOwner(tokenId) {
         _totalPrivateDistribution[tokenId] += distribution;
         _totalPrivateDistribution[tokenId] -= _privateDistribution[recipient];
 
         _privateDistribution[tokenId][recipient] = distribution;
     }
     
-    function setDistributionForHolders(uint256 tokenId, uint256 distribution) public onlyUnlocked onlyTokenOwner(tokenId) {
+    function setDistributionForHolders(uint256 tokenId, uint256 distribution) public onlyUnlocked updateTokenParent(tokenId) onlyTokenOwner(tokenId) {
         _holderDistribution[tokenId] = distribution;
     }
     
-    function setAmountTransferred(uint256 tokenId, uint256 distribution) public onlyUnlocked onlyTokenOwner(tokenId) {
+    function setAmountTransferred(uint256 tokenId, uint256 distribution) public onlyUnlocked updateTokenParent(tokenId) onlyTokenOwner(tokenId) {
         _transferDistribution[tokenId] = distribution;
     }
     
-    function setBalance(uint256 tokenId, address recipient, int256 amount) public onlyUnlocked onlyTokenOwner(tokenId) {
+    function setBalance(uint256 tokenId, address recipient, int256 amount) public onlyUnlocked updateTokenParent(tokenId) onlyTokenOwner(tokenId) {
         _totalSupply[tokenId] += amount;
         _totalSupply[tokenId] -= _balances[recipient];
         
         _balances[tokenId][recipient] = amount;
     }
 
-    function finalize(uint256 tokenId) public onlyUnlocked onlyTokenOwner(tokenId) {
+    function finalize(uint256 tokenId) public onlyUnlocked updateTokenParent(tokenId) onlyTokenOwner(tokenId) {
         _owners[tokenId] = address(0);
     }
     
     // Custom Getters for Custom Initialization
     function name(uint256 tokenId) public view onlyTokenInitialized(tokenId) returns (string memory) {
-        return _name[tokenId];
+        TokenLogicContract parent = TokenLogicContract(this);
+        while (!_isWaitingOnParent && address(parent) != address(0) && !parent._tokenMetaLoaded[tokenId]) {
+            parent = parent._parent;
+        }
+        return parent._name[tokenId];
     }
     
     function symbol(uint256 tokenId) public view onlyTokenInitialized(tokenId) returns (string memory) {
-        return _symbol[tokenId];
+        TokenLogicContract parent = TokenLogicContract(this);
+        while (!_isWaitingOnParent && address(parent) != address(0) && !parent._tokenMetaLoaded[tokenId]) {
+            parent = parent._parent;
+        }
+        return parent._symbol[tokenId];
     }
 
     // Helpers (these use "true tokens")
@@ -203,7 +219,11 @@ contract TokenLogicContract is Multicall, Ownable, ERC2771Context {
     }
 
     function _getTrueBalance(uint256 tokenId, address holder) internal view onlyTokenInitialized(tokenId) returns (uint256) {
-        return _balances[tokenId][toGet] + _getTrueDistributionAmount(_privateDistributionAmount[tokenId], _privateDistribution[tokenId][holder]) - _balanceDebts[tokenId][toGet];
+        TokenLogicContract parent = TokenLogicContract(this);
+        while (!_isWaitingOnParent && address(parent) != address(0) && !parent._tokenBalanceLoaded[tokenId][holder]) {
+            parent = parent._parent;
+        }
+        return parent._balances[tokenId][toGet] + parent._getTrueDistributionAmount(parent._privateDistributionAmount[tokenId], parent._privateDistribution[tokenId][holder]) - parent._balanceDebts[tokenId][toGet];
     }
 
     function _distributeTruePrivate(uint256 tokenId, uint256 amount) internal onlyTokenInitialized(tokenId) {
@@ -249,34 +269,54 @@ contract TokenLogicContract is Multicall, Ownable, ERC2771Context {
 
     // Helpers
     function _trueToVisible(uint256 tokenId, uint256 amount) internal view onlyTokenInitialized(tokenId) returns (uint256) {
-        return _getTrueDistributionAmount(amount, _holderDistributionAmount[tokenId]);
+        TokenLogicContract parent = TokenLogicContract(this);
+        while (!_isWaitingOnParent && address(parent) != address(0) && !parent._tokenMetaLoaded[tokenId]) {
+            parent = parent._parent;
+        }
+        return parent._getTrueDistributionAmount(amount, parent._holderDistributionAmount[tokenId]);
     }
     
     function _visibleToTrue(uint256 tokenId, uint256 amount) internal view onlyTokenInitialized(tokenId) returns (uint256) {
+        TokenLogicContract parent = TokenLogicContract(this);
+        while (!_isWaitingOnParent && address(parent) != address(0) && !parent._tokenMetaLoaded[tokenId]) {
+            parent = parent._parent;
+        }
         // Can't be simplified :(
-        return amount.fromUInt().mul((10 ** 18).fromUInt()).div(_holderDistributionAmount[tokenId]).toUInt();
+        return amount.fromUInt().mul((10 ** 18).fromUInt()).div(parent._holderDistributionAmount[tokenId]).toUInt();
     }
 
     // Custom Getters for ERC20 Properties
     function totalSupply(uint256 tokenId) public view onlyTokenInitialized(tokenId) returns (uint256) {
-        return _trueToVisible(tokenId, _totalSupply);
+        TokenLogicContract parent = TokenLogicContract(this);
+        while (!_isWaitingOnParent && address(parent) != address(0) && !parent._tokenMetaLoaded[tokenId]) {
+            parent = parent._parent;
+        }
+        return parent._trueToVisible(tokenId, parent._totalSupply);
     }
     
     function balanceOf(uint256 tokenId, address holder) public view onlyTokenInitialized(tokenId) returns (uint256 balance) {
-        return _trueToVisible(tokenId, _getTrueBalance(tokenId, holder));
+        TokenLogicContract parent = TokenLogicContract(this);
+        while (!_isWaitingOnParent && address(parent) != address(0) && !parent._tokenBalanceLoaded[tokenId][holder]) {
+            parent = parent._parent;
+        }
+        return parent._trueToVisible(tokenId, parent._getTrueBalance(tokenId, holder));
     }
     
     function allowance(uint256 tokenId, address holder, address spender) public view onlyTokenInitialized(tokenId) returns (uint256 remaining) {
-        return _allowances[tokenId][holder][spender];
+        TokenLogicContract parent = TokenLogicContract(this);
+        while (!_isWaitingOnParent && address(parent) != address(0) && !parent._tokenAllowanceLoaded[tokenId][holder][spender]) {
+            parent = parent._parent;
+        }
+        return parent._allowances[tokenId][holder][spender];
     }
     
     // Custom Methods for ERC20 Properties
-    function transfer(uint256 tokenId, address to, uint256 value) public onlyUnlocked onlyTokenInitialized(tokenId) returns (bool success) {
+    function transfer(uint256 tokenId, address to, uint256 value) public onlyUnlocked updateTokenParent(tokenId) updateTokenHolder(tokenId, _msgSender()) updateTokenHolder(tokenId, to) onlyTokenInitialized(tokenId) returns (bool success) {
         _transferTrue(tokenId, _msgSender(), to, _visibleToTrue(tokenId, value));
         return true;
     }
     
-    function transferFrom(uint256 tokenId, address from, address to, uint256 value) public onlyUnlocked onlyTokenInitialized(tokenId) returns (bool success) {
+    function transferFrom(uint256 tokenId, address from, address to, uint256 value) public onlyUnlocked updateTokenParent(tokenId) updateTokenHolder(tokenId, from) updateTokenHolder(tokenId, to) updateTokenAllowance(tokenId, from, _msgSender()) onlyTokenInitialized(tokenId) returns (bool success) {
         require(_allowances[tokenId][_msgSender()][from] >= value, "Not enough allowance");
 
         _allowances[tokenId][_msgSender()][from] -= value;
@@ -284,7 +324,7 @@ contract TokenLogicContract is Multicall, Ownable, ERC2771Context {
         return true;
     }
     
-    function approve(uint256 tokenId, address spender, uint256 value) public onlyUnlocked onlyTokenInitialized(tokenId) returns (bool success) {
+    function approve(uint256 tokenId, address spender, uint256 value) public onlyUnlocked updateTokenParent(tokenId) updateTokenHolder(tokenId, spender) updateTokenAllowance(tokenId, _msgSender(), spender) onlyTokenInitialized(tokenId) returns (bool success) {
         _allowances[tokenId][_msgSender()][spender] = value;
         return true;
     }
