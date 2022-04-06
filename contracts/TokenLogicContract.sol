@@ -7,55 +7,61 @@ import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "https://github.com/abdk-consulting/abdk-libraries-solidity/blob/v3.0/ABDKMathQuad.sol";
-import "./ERC20Proxied.sol";
 
 contract TokenLogicContract is Multicall, Ownable, ERC2771Context {
     // Libraries
     using SafeCast for *;
     using ABDKMathQuad for *;
-
-    // Version number: Used for upgrades
-    uint256 public constant _version = 0;
     
-    // Token Config: Meta
+    // Config
     mapping(address => string) public _name;
     mapping(address => string) public _symbol;
     
-    // Token Config: Dist
     mapping(address => mapping(address => uint256)) public _privateDistribution;
     mapping(address => uint256) public _totalPrivateDistribution = 0;
     mapping(address => uint256) public _holderDistribution = 0;
     mapping(address => uint256) public _transferDistribution = 0;
-
-    // Token State: Balances
-    mapping(address => mapping(address => uint256)) public _balances;
-    mapping(address => mapping(address => uint256)) public _balanceDebts;
-    mapping(address => uint256) public _holderDistributionAmount = 10**18; // Amount to multiply final balances by
-    mapping(address => uint256) public _privateDistributionAmount = 0; // Amount to add to balances
-
-    // Token State: Allowances
-    mapping(address => mapping(address => mapping(address => uint256))) public _allowances; // More standard ERC20 stuff
     
-    // Token State: Total Supply
+    // State
+    mapping(address => bool) public _initialized;
+
+    mapping(address => mapping(address => uint256)) public _balances; // Standard ERC20 stuff
+    mapping(address => mapping(address => uint256)) public _balanceDebts;
+    mapping(address => mapping(address => mapping(address => uint256))) public _allowances; // More standard ERC20 stuff
     mapping(address => uint256) public _totalSupply = 0;
     
-    // Token Creation
-    mapping(address => address) public _owners;
-    mapping(address => address) public _reverseOwners;
+    mapping(address => uint256) public _holderDistributionAmount = 10**18; // Amount to multiply final balances by
     
-    // Logic Upgradeability
+    mapping(address => uint256) public _privateDistributionAmount = 0; // Amount to add to balances
+
     bool public _hasParent;
     bool public _isWaitingOnParent;
     TokenLogicContract public _parent;
     bool public _isFrozen;
     
-    // Lazy Upgrade Information
-    mapping(address => bool) _ownerLoaded;
     mapping(address => bool) _tokenMetaLoaded;
     mapping(address => mapping(address => bool)) _tokenBalanceLoaded;
     mapping(address => mapping(address => mapping(address => bool))) _tokenAllowanceLoaded;
 
-    // Modifiers
+    // Modifier
+    modifier onlyTokenOwner {
+        TokenLogicContract parent = TokenLogicContract(this);
+        while (!_isWaitingOnParent && address(parent) != address(0) && !parent._tokenMetaLoaded[_msgSender()]) {
+            parent = parent._parent;
+        }
+        require(!parent._initialized[_msgSender()]);
+        _;
+    }
+
+    modifier onlyTokenInitialized {
+        TokenLogicContract parent = TokenLogicContract(this);
+        while (!_isWaitingOnParent && address(parent) != address(0) && !parent._tokenMetaLoaded[_msgSender()]) {
+            parent = parent._parent;
+        }
+        require(parent._initialized[_msgSender()]);
+        _;
+    }
+
     modifier onlyUnlocked {
         // Waiting on parent checks
         if (_hasParent && _isWaitingOnParent) {
@@ -67,24 +73,62 @@ contract TokenLogicContract is Multicall, Ownable, ERC2771Context {
         _;
     }
 
-    modifier tokenInit {
-        TokenLogicContract parent = _getOwnerParent(tokenOwner);
-        // Make token if one isn't currently being made
-        if (parent._reverseOwners[_msgSender()] == address(0)) {
-            ERC20Proxied newToken = new ERC20Proxied(); // TODO arguments
-            _doesTokenExist[address(newToken)] = true;
-            _owners[address(newToken)] = _msgSender();
-            _reverseOwners[_msgSender()] = address(newToken);
+    modifier updateTokenParent {
+        // Waiting on parent checks
+        if (_hasParent && !_isWaitingOnParent && !_tokenMetaLoaded[_msgSender()]) {
+            TokenLogicContract parent = _parent;
+            while (address(parent) != address(0) && !parent._tokenMetaLoaded[_msgSender()]) {
+                parent = parent._parent;
+            }
+            _tokenMetaLoaded[_msgSender()] = true;
+            if (address(parent) != address(0)) {
+                _name[_msgSender()] = parent._name[_msgSender()];
+                _symbol[_msgSender()] = parent._symbol[_msgSender()];
+                _initialized[_msgSender()] = parent._initialized[_msgSender()];
+                _doesTokenExist[_msgSender()] = parent._doesTokenExist[_msgSender()];
+                _totalPrivateDistribution[_msgSender()] = parent._totalPrivateDistribution[_msgSender()];
+                _holderDistribution[_msgSender()] = parent._holderDistribution[_msgSender()];
+                _transferDistribution[_msgSender()] = parent._transferDistribution[_msgSender()];
+                _totalSupply[_msgSender()] = parent._totalSupply[_msgSender()];
+                _holderDistributionAmount[_msgSender()] = parent._holderDistributionAmount[_msgSender()];
+                _privateDistributionAmount[_msgSender()] = parent._privateDistributionAmount[_msgSender()];
+            }
         }
         _;
     }
 
-    modifier tokenLive(address token) {
-        TokenLogicContract parent = _getTokenParent(token);
-        require(parent._owner[token] == address(0));
+    modifier updateTokenHolder(address holder) {
+        // Waiting on parent checks
+        if (_hasParent && !_isWaitingOnParent && !_tokenBalanceLoaded[_msgSender()][holder]) {
+            TokenLogicContract parent = _parent;
+            while (address(parent) != address(0) && !parent._tokenBalanceLoaded[_msgSender()][holder]) {
+                parent = parent._parent;
+            }
+            _tokenBalanceLoaded[_msgSender()][holder] = true;
+            if (address(parent) != address(0)) {
+                _balances[_msgSender()][holder] = parent._balances[_msgSender()][holder];
+                _balanceDebts[_msgSender()][holder] = parent._balanceDebts[_msgSender()][holder];
+                _privateDistribution[_msgSender()][holder] = parent._privateDistribution[_msgSender()][holder];
+            }
+        }
         _;
     }
 
+    modifier updateTokenAllowance(address holder, address executor) {
+        // Waiting on parent checks
+        if (_hasParent && !_isWaitingOnParent && !_tokenAllowanceLoaded[_msgSender()][holder][executor]) {
+            TokenLogicContract parent = _parent;
+            while (address(parent) != address(0) && !parent._tokenAllowanceLoaded[_msgSender()]) {
+                parent = parent._parent;
+            }
+            _tokenAllowanceLoaded[_msgSender()][holder][executor] = true;
+            if (address(parent) != address(0)) {
+                _allowances[_msgSender()][holder][executor] = parent._allowances[_msgSender()][holder][executor];
+            }
+        }
+        _;
+    }
+    
     // Constructor
     constructor (address parent, address trustedForwarder) ERC2771Context(trustedForwarder) {
         if (parent != address(0)) {
@@ -97,97 +141,18 @@ contract TokenLogicContract is Multicall, Ownable, ERC2771Context {
         }
     }
 
-    // Upgrade Helpers
-    function _getOwnerParent(address tokenOwner) internal view returns (TokenLogicContract) {
-        if (_ownerLoaded[tokenOwner]) {
-            return TokenLogicContract(this);
-        }
-        if (_hasParent) {
-            return _parent._getOwnerParent(tokenOwner);
-        }
-        return TokenLogicContract(this);
-    }
-
-    function _getTokenParent(address token) internal view returns (TokenLogicContract) {
-        if (_tokenMetaLoaded[token]) {
-            return TokenLogicContract(this);
-        }
-        if (_hasParent) {
-            return _parent._getTokenParent(token);
-        }
-        return TokenLogicContract(this);
-    }
-
-    function _getHolderParent(address token, address holder) internal view returns (TokenLogicContract) {
-        if (_tokenBalanceLoaded[token][holder]) {
-            return TokenLogicContract(this);
-        }
-        if (_hasParent) {
-            return _parent._getHolderParent(token, holder);
-        }
-        return TokenLogicContract(this);
-    }
-
-    function _getAllowanceParent(address token, address holder, address sender) internal view returns (TokenLogicContract) {
-        if (_tokenAllowanceLoaded[token][holder][sender]) {
-            return TokenLogicContract(this);
-        }
-        if (_hasParent) {
-            return _parent._getAllowanceParent(token, holder, sender);
-        }
-        return TokenLogicContract(this);
-    }
-
-    function _loadOwner(address tokenOwner) internal {
-        TokenLogicContract parent = _getOwnerParent(tokenOwner);
-
-        _reverseOwners[tokenOwner] = parent._reverseOwners[tokenOwner];
-
-        _ownerLoaded[tokenOwner] = true;
-    }
-
-    function _loadToken(address token) internal {
-        TokenLogicContract parent = _getTokenParent(token);
-
-        _name[token] = parent._name[token];
-        _symbol[token] = parent._symbol[token];
-        _owners[token] = parent._owners[token];
-        _doesTokenExist[token] = parent._doesTokenExist[token];
-        _totalPrivateDistribution[token] = parent._totalPrivateDistribution[token];
-        _holderDistribution[token] = parent._holderDistribution[token];
-        _transferDistribution[token] = parent._transferDistribution[token];
-        _totalSupply[token] = parent._totalSupply[token];
-        _holderDistributionAmount[token] = parent._holderDistributionAmount[token];
-        _privateDistributionAmount[token] = parent._privateDistributionAmount[token];
-
-        _tokenMetaLoaded[token] = true;
-    }
-
-    function _loadHolder(address token, address holder) internal {
-        TokenLogicContract parent = _getHolderParent(token, holder);
-
-        _balances[token][holder] = parent._balances[token][holder];
-        _balanceDebts[token][holder] = parent._balanceDebts[token][holder];
-        _privateDistribution[token][holder] = parent._privateDistribution[token][holder];
-        
-        _tokenBalanceLoaded[token][holder] = true;
-    }
-
-    function _loadAllowance(address token, address holder, address sender) internal {
-        TokenLogicContract parent = _getAllowanceParent(token, holder, sender);
-
-        _allowances[token][holder][sender] = parent._allowances[token][holder][sender];
-
-        _tokenBalanceLoaded[token][holder][sender] = true;
-    }
-
     // Upgradeability
     function freeze() public onlyOwner {
         _isFrozen = true;
     }
     
     // Initialization Functions
-    function setName(string memory newName) public onlyInit {
+    function createToken() public onlyUnlocked {
+        _doesTokenExist[_msgSender()] = true;
+        _owners[_msgSender()] = _msgSender();
+    }
+
+    function setName(string memory newName) public onlyUnlocked updateTokenParent onlyTokenOwner {
         _name[_msgSender()] = newName;
     }
     
