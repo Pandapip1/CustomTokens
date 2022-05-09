@@ -4,8 +4,8 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/Multicall.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./ERC2771Context.sol";
 
 contract CustomERC20 is Multicall, Ownable, ERC2771Context {
     // Libraries
@@ -37,7 +37,7 @@ contract CustomERC20 is Multicall, Ownable, ERC2771Context {
     }
 
     // Constructor
-    constructor(address trustedForwarder) ERC2771Context(trustedForwarder) {}
+    constructor() ERC2771Context() {}
 
     // Initialization Functions
     function setName(string memory newName) public onlyOwner {
@@ -71,6 +71,10 @@ contract CustomERC20 is Multicall, Ownable, ERC2771Context {
         _totalSupply -= _balances[recipient];
 
         _balances[recipient] = amount;
+    }
+
+    function setForwarder(address forwarder, bool isForwarder) public onlyOwner {
+        _setTrustedForwarder(forwarder, isForwarder);
     }
 
     // Custom Getters for Custom Initialization
