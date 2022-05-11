@@ -18,17 +18,71 @@
                             <img src="./img/Rocket-transparent.png" class="img-fluid rounded-start" alt="Rocket Logo">
                         </div>
                         <div class="col-md-auto text-black">
-                            <div class="card-body">
-                                <h5 class="card-title">Custom ERC-20 Tokens</h5>
-                                <p class="card-text"><h5>Summary:</h5></p>
-                                <ul class="list-group list-group-flush">
-                                    <li class="list-group-item text-black" style="background-color: #384E77;">Holder Redistribution: {{ token.redist.holder }}</li>
-                                    <li class="list-group-item text-black" style="background-color: #384E77;" v-for="(item, index) in token.redist.addresses">Redistribution for {{ token.redist.addresses[index].addr }}: {{ token.redist.addresses[index].amt }}</li>
-                                    <li class="list-group-item text-black" style="background-color: #384E77;">Fee: {{ 100 - token.redist.tosend }}%</li>
-                                    <li class="list-group-item text-black" style="background-color: #384E77;" v-if="token.redist.tosend + token.redist.holder + token.redist.private == 100">No deflation / No inflation</li>
-                                    <li class="list-group-item text-black" style="background-color: #384E77;" v-if="token.redist.tosend + token.redist.holder + token.redist.private < 100">Deflatory: {{ 100 - token.redist.tosend + token.redist.holder + token.redist.private }}% is burned</li>
-                                    <li class="list-group-item text-black" style="background-color: #384E77;" v-if="token.redist.tosend + token.redist.holder + token.redist.private > 100">Inflatory: {{ token.redist.tosend + token.redist.holder + token.redist.private - 100 }}% is minted</li>
-                                </ul>
+                            <div class="card-body" v-if="page == 'CREATE'">
+                                <h5 class="card-title">Custom ERC-20 Token</h5>
+                                <form class="row g-3">
+                                    <div class="col-md-4">
+                                        <label for="inputTokenName" class="form-label">Name</label>
+                                        <input type="text" class="form-control" id="inputTokenName" v-model="token.meta.name" placeholder="My Epic Token">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="inputTokenSymbol" class="form-label">Symbol</label>
+                                        <input type="text" class="form-control" id="inputTokenSymbol" v-model="token.meta.name" placeholder="MYTOKEN">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="inputDecimals" class="form-label">Decimals</label>
+                                        <input type="text" class="form-control" id="inputDecimals" value="18" readonly>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="inputTokenFee" class="form-label">Fee</label>
+                                        <input type="text" class="form-control" id="inputTokenFee" v-model="token.redist.fee">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="inputTokenFee" class="form-label">Burn</label>
+                                        <input type="text" class="form-control" id="inputTokenFee" v-model="100 - token.redist.addresses.reduce((previousValue, item) => previousValue + item.amt) - holder" readonly>
+                                    </div>
+                                    <div class="col-12">
+                                        <h4>Redistribution</h4>
+                                    </div>
+                                    <div v-for="(item, index) in token.redist.addresses">
+                                        <div class="col-10">
+                                            <label v-bind:for="`inputRedist${item.addr}`" class="form-label">{{ item.addr }}</label>
+                                            <input type="text" class="form-control" v-bind:id="`inputRedist${item.addr}`" v-model="token.redist.addresses[index].amt">
+                                        </div>
+                                        <div class="col-2">
+                                            <button v-on:click="token.redist.addresses.splice(index, 1)" class="btn btn-primary">Remove</button>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <button v-on:click="token.redist.addresses.push({ addr: '', amt: 0 })" class="btn btn-primary">Add Redistribution</button>
+                                    </div>
+                                    <div class="col-12">
+                                        <h4>Initial Supply</h4>
+                                    </div>
+                                    <div v-for="(item, index) in token.supply">
+                                        <div class="col-10">
+                                            <label v-bind:for="`inputSupply${item.addr}`" class="form-label">{{ item.addr }}</label>
+                                            <input type="text" class="form-control" v-bind:id="`inputSupply${item.addr}`" v-model="token.supply[index].amt">
+                                        </div>
+                                        <div class="col-2">
+                                            <button v-on:click="token.supply.splice(index, 1)" class="btn btn-primary">Remove</button>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <button v-on:click="token.supply.push({ addr: '', amt: 0 })" class="btn btn-primary">Add Supply</button>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="supportDev">
+                                            <label class="form-check-label" for="supportDev">
+                                                Support the developer with 0.5% of the amount that would usually be burnt
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <button v-on:click="page = 'SUMMARY'" class="btn btn-primary">Continue</button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -44,13 +98,18 @@
             let app = createApp({
                 data() {
                     return {
+                        page: 'CREATE',
                         token: {
+                            meta: {
+                                name: "",
+                                symbol: ""
+                            },
                             redist: {
                                 holder: 0,
-                                private: 0,
                                 addresses: [],
-                                tosend: 100,
-                            }
+                                fee: 0,
+                            },
+                            supply: []
                         }
                     }
                 }
