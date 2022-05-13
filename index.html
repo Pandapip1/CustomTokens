@@ -58,9 +58,9 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <br/>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="supportDev">
+                                        <div class="form-check" v-if="100 != token.redist.addresses.reduce((previousValue, item) => (previousValue + item.amt), 0) + token.redist.holder">
+                                            <br/>
+                                            <input class="form-check-input" type="checkbox" id="supportDev" v-model="token.redist.supdev">
                                             <label class="form-check-label" for="supportDev">
                                                 Support the developer with 0.5% of the amount that would usually be burnt
                                             </label>
@@ -114,6 +114,7 @@
                                 holder: 0,
                                 addresses: [],
                                 fee: 0,
+                                supdev: true,
                                 temp: {
                                     amt: 0,
                                     addr: ""
