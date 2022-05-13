@@ -18,60 +18,41 @@
                             <img src="./img/Rocket-transparent.png" class="img-fluid rounded-start" alt="Rocket Logo">
                         </div>
                         <div class="col-md-auto text-black">
-                            <div class="card-body" v-if="page == 'CREATE'">
-                                <h5 class="card-title">Custom ERC-20 Token</h5>
-                                <form class="row g-3">
-                                    <div class="col-md-4">
-                                        <label for="inputTokenName" class="form-label">Name</label>
-                                        <input type="text" class="form-control" id="inputTokenName" v-model="token.meta.name" placeholder="My Epic Token">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label for="inputTokenSymbol" class="form-label">Symbol</label>
-                                        <input type="text" class="form-control" id="inputTokenSymbol" v-model="token.meta.name" placeholder="MYTOKEN">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label for="inputDecimals" class="form-label">Decimals</label>
-                                        <input type="text" class="form-control" id="inputDecimals" value="18" readonly>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="inputTokenFee" class="form-label">Fee</label>
-                                        <input type="text" class="form-control" id="inputTokenFee" v-model="token.redist.fee">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="inputTokenFee" class="form-label">Burn</label>
-                                        <input type="text" class="form-control" id="inputTokenFee" v-model="100 - token.redist.addresses.reduce((previousValue, item) => previousValue + item.amt) - holder" readonly>
-                                    </div>
-                                    <div class="col-12">
-                                        <h4>Redistribution</h4>
-                                    </div>
-                                    <div v-for="(item, index) in token.redist.addresses">
-                                        <div class="col-10">
-                                            <label v-bind:for="`inputRedist${item.addr}`" class="form-label">{{ item.addr }}</label>
-                                            <input type="text" class="form-control" v-bind:id="`inputRedist${item.addr}`" v-model="token.redist.addresses[index].amt">
-                                        </div>
-                                        <div class="col-2">
-                                            <button v-on:click="token.redist.addresses.splice(index, 1)" class="btn btn-primary">Remove</button>
+                            <div class="d-flex align-items-start">
+                                <div class="nav flex-column nav-pills me-3" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                                    <button class="nav-link active" id="v-pills-meta-tab" data-bs-toggle="pill" data-bs-target="#v-pills-home" type="button" role="tab" aria-controls="v-pills-home" aria-selected="true">Metadata</button>
+                                    <button class="nav-link" id="v-pills-redist-tab" data-bs-toggle="pill" data-bs-target="#v-pills-profile" type="button" role="tab" aria-controls="v-pills-profile" aria-selected="false">Redistribution</button>
+                                    <button class="nav-link" id="v-pills-supply-tab" data-bs-toggle="pill" data-bs-target="#v-pills-messages" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Initial Supply</button>
+                                </div>
+                                <div class="tab-content" id="v-pills-tabContent">
+                                    <div class="tab-pane fade show active" id="v-pills-meta" role="tabpanel" aria-labelledby="v-pills-meta-tab">
+                                        <div class="input-group">
+                                            <input type="text" aria-label="Name" class="form-control" placeholder="Name (e.g. My Epic Token)" v-model="token.meta.name">
+                                            <input type="text" aria-label="Symbol" class="form-control" placeholder="Symbol (e.g MYTOKEN)" v-model="token.meta.symbol">
+                                            <input type="text" aria-label="Decimals" class="form-control" readonly value="18">
                                         </div>
                                     </div>
-                                    <div class="col-12">
-                                        <button v-on:click="token.redist.addresses.push({ addr: '', amt: 0 })" class="btn btn-primary">Add Redistribution</button>
-                                    </div>
-                                    <div class="col-12">
-                                        <h4>Initial Supply</h4>
-                                    </div>
-                                    <div v-for="(item, index) in token.supply">
-                                        <div class="col-10">
-                                            <label v-bind:for="`inputSupply${item.addr}`" class="form-label">{{ item.addr }}</label>
-                                            <input type="text" class="form-control" v-bind:id="`inputSupply${item.addr}`" v-model="token.supply[index].amt">
+                                    <div class="tab-pane fade" id="v-pills-redist" role="tabpanel" aria-labelledby="v-pills-redist-tab">
+                                        <label for="feeRange" class="form-label">Fee: {{ token.redist.fee }}%</label>
+                                        <input type="range" class="form-range" min="0" max="15" step="0.5" id="feeRange" v-model="token.redist.fee">
+                                        <hr/>
+                                        <label for="burnRange" class="form-label">Burn: {{ 100 - token.redist.addresses.reduce((previousValue, item) => previousValue + item.amt) - token.redist.holder }}%</label>
+                                        <input type="range" class="form-range" min="0" max="100" step="0.1" id="burnRange" v-model="100 - token.redist.addresses.reduce((previousValue, item) => previousValue + item.amt) - holder" readonly>
+                                        <label for="holdRange" class="form-label">Holder Redistribution: {{ token.redist.holder }}%</label>
+                                        <input type="range" class="form-range" min="0" max="100" step="0.1" id="holdRange" v-bind:value="100 - token.redist.addresses.reduce((previousValue, item) => previousValue + item.amt) - holder" readonly>
+                                        <div v-for="(item, index) in token.redist.addresses">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" v-bind:value="token.redist.addresses[index].addr" readonly>
+                                                <input type="text" class="form-control" v-bind:value="token.redist.addresses[index].amt" readonly>
+                                                <button class="btn btn-outline-danger" v-on:click="token.redist.addresses.splice(index, 1)">Remove</button>
+                                            </div>
                                         </div>
-                                        <div class="col-2">
-                                            <button v-on:click="token.supply.splice(index, 1)" class="btn btn-primary">Remove</button>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" v-model="token.redist.temp.addr" placeholder="Ethereum Address (0x000...)">
+                                            <input type="number" class="form-control" v-model="token.redist.temp.amt" placeholder="Redistribution Percent (e.g. 5)">
+                                            <span class="input-group-text">%</span>
+                                            <button class="btn btn-outline-primary" v-on:click="token.redist.addresses.push({ addr: token.redist.temp.addr, amt: token.redist.temp.amt })">Add</button>
                                         </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <button v-on:click="token.supply.push({ addr: '', amt: 0 })" class="btn btn-primary">Add Supply</button>
-                                    </div>
-                                    <div class="col-12">
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" id="supportDev">
                                             <label class="form-check-label" for="supportDev">
@@ -79,10 +60,22 @@
                                             </label>
                                         </div>
                                     </div>
-                                    <div class="col-12">
-                                        <button v-on:click="page = 'SUMMARY'" class="btn btn-primary">Continue</button>
+                                    <div class="tab-pane fade" id="v-pills-supply" role="tabpanel" aria-labelledby="v-pills-supply-tab">
+                                        <div v-for="(item, index) in token.supply">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" v-bind:value="token.supply[index].addr" readonly>
+                                                <input type="text" class="form-control" v-bind:value="token.supply[index].amt" readonly>
+                                                <button class="btn btn-outline-danger" v-on:click="token.supply.splice(index, 1)">Remove</button>
+                                            </div>
+                                        </div>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" v-model="token.tempSupply.addr" placeholder="Ethereum Address (0x000...)">
+                                            <input type="number" class="form-control" v-bind="token.tempSupply.amt" placeholder="Initial Supply (e.g. 100000)">
+                                            <span class="input-group-text">{{ token.meta.symbol }}</span>
+                                            <button class="btn btn-outline-primary" v-on:click="token.redist.addresses.push({ addr: token.tempSupply.addr, amt: token.tempSupply.amt })">Add</button>
+                                        </div>
                                     </div>
-                                </form>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -108,9 +101,17 @@
                                 holder: 0,
                                 addresses: [],
                                 fee: 0,
+                                temp: {
+                                    amt: 0,
+                                    addr: ""
+                                }
                             },
-                            supply: []
-                        }
+                            supply: [],
+                            tempSupply: {
+                                amt: 0,
+                                addr: ""
+                            }
+                        },
                     }
                 }
             });
