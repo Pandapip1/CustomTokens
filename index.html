@@ -86,6 +86,8 @@
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>
         <script src="https://unpkg.com/vue@3"></script>
         <script>
+            window.onerror = e => alert(e.message);
+            
             const { createApp } = Vue;
           
             let app = createApp({
@@ -115,9 +117,7 @@
                 }
             });
 
-            app.mount('#app')
-
-            window.onerror(alert);
+            app.mount('#app');
         </script>
     </body>
 </html>
