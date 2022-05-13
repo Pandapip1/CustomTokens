@@ -86,8 +86,8 @@
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>
         <script src="https://unpkg.com/vue@3"></script>
         <script>
-            window.onerror = e => alert(e.message);
-            
+            window.onerror = e => alert(e.stack);
+
             const { createApp } = Vue;
           
             let app = createApp({
