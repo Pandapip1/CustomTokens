@@ -86,7 +86,9 @@
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>
         <script src="https://unpkg.com/vue@3"></script>
         <script>
-            window.onerror = (message, source, lineno, colno, error) => alert(message);
+            window.onerror = (message, source, lineno, colno, error) => {
+                alert(`Message: ${message}\nSource: ${source} at ${lineno}:${colno}\nStack:\n${error.stack}`);
+            };
 
             const { createApp } = Vue;
           
