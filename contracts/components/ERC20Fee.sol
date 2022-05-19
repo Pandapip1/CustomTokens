@@ -4,11 +4,13 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 /// @title                      An extension of ERC20 that adds a percentage transaction fee
 /// @author                     Pandapip1 (@Pandapip1)
 /// @notice                     When sending from an EOA to a smart contract, there will be no transaction fee
 abstract contract ERC20Fee is ERC20 {
+    using Address for address;
 
     ///////////////
     //// STATE ////
@@ -47,11 +49,10 @@ abstract contract ERC20Fee is ERC20 {
     }
 
     /// @notice                 Sets _fee
-    /// @dev                    Make sure to pay attention to scalingFactor
     /// @param  newFee          The value of _fee
-    function _setScaling(uint256 newFee) internal virtual {
-        require(newFee < 10 ** 18, "Scaling must be positive");
-        emit FeeUpdated(newFee, _fee);
+    function _setFee(uint256 newFee) internal virtual {
+        require(newFee < 10 ** 18, "Fee must be less than one");
+        emit FeeUpdated(newFee, fee());
         _fee = newFee;
     }
 
@@ -60,7 +61,10 @@ abstract contract ERC20Fee is ERC20 {
     //// OVERRIDES ////
     ///////////////////
 
-    function _transfer(address from, address to, uint256 amount) internal virtual override {
-        super._transfer(from, to, amount * _fee / 10 ** 18);
+    function _afterTokenTransfer(address from, address to, uint256 amount) internal virtual override {
+        super._afterTokenTransfer(from, to, amount);
+        if (from != address(0) && to != address(0) && !(to.isContract() && !from.isContract())) {
+            _burn(to, amount * fee() / 10 ** 18);
+        }
     }
 }
