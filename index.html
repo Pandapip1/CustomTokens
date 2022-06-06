@@ -112,7 +112,6 @@
                                         <span class="input-group-text" id="fee-addon">Fee</span>
                                         <input type="text" class="form-control" placeholder="Fee" aria-label="Fee" aria-describedby="fee-addon" readonly v-bind:value="`${token.redist.fee}%`">
                                     </div>
-                                    <br/>
                                     <div class="input-group mb-3" v-if="deploymentStep == 0">
                                         <span class="input-group-text" id="burn-addon">Burned</span>
                                         <input type="text" class="form-control" placeholder="Burn" aria-label="Burn" aria-describedby="burn-addon" readonly v-bind:value="`${100 - token.redist.addresses.reduce((previousValue, item) => (previousValue + item.amt), 0) - token.redist.holder}%`">
@@ -128,7 +127,6 @@
                                         <span class="input-group-text" id="isupply-addon">Initial Supply</span>
                                         <input type="text" class="form-control" placeholder="Initial Supply" aria-label="Initial Supply" aria-describedby="isupply-addon" readonly v-bind:value="`${token.redist.fee}%`">
                                     </div>
-                                    <br/>
                                     <div class="input-group mb-3" v-for="(item, index) in token.supply">
                                         <span class="input-group-text" v-bind:id="`redist-addon${index}`">{{ item.addr }}</span>
                                         <input type="text" class="form-control" placeholder="Redist" aria-label="Redist" v-bind:aria-describedby="`redist-addon${index}`" readonly v-bind:value="`${item.amt} ${token.meta.symbol}`">
