@@ -2,8 +2,6 @@
 import { ref } from "vue";
 import Web3Modal from "web3modal";
 import * as ethers from "ethers";
-import ethProvider from "eth-provider";
-import WalletConnectProvider from "@walletconnect/web3-provider"
 import "bootstrap";
 
 
@@ -35,21 +33,14 @@ async function deploy(event) {
     // Login
     this.deploymentStep = 1;
     const providerOptions = {
-        walletconnect: {
-            package: WalletConnectProvider,
-            options: {
-                infuraId: "" // TODO
-            }
-        },
-        frame: {
-            package: ethProvider
-        }
+
     };
 
     const web3Modal = new Web3Modal({
         network: "xdai", // Gnosis Chain
         cacheProvider: true,
-        providerOptions
+        providerOptions,
+        theme: "dark"
     });
 
     const instance = await web3Modal.connect();
