@@ -34,7 +34,7 @@
                                     <div v-if="token.redist.fee != 0">
                                         <hr/>
                                         <label for="burnRange" class="form-label">Burn: {{ 100 - token.redist.addresses.reduce((previousValue, item) => (previousValue + item.amt), 0) - token.redist.holder }}%</label>
-                                        <input type="range" class="form-range disabled" min="0" max="100" step="0.1" id="burnRange" v-bind:value="100 - token.redist.addresses.reduce((previousValue, item) => (previousValue + item.amt), 0) - holder" disabled>
+                                        <input type="range" class="form-range disabled" min="0" max="100" step="0.1" id="burnRange" v-bind:value="100 - token.redist.addresses.reduce((previousValue, item) => (previousValue + item.amt), 0) - token.redist.holder" disabled>
                                         <label for="holdRange" class="form-label">Holder Redistribution: {{ token.redist.holder }}%</label>
                                         <input type="range" class="form-range" min="0" max="100" step="0.1" id="holdRange" v-model="token.redist.holder" readonly>
                                         <div class="row" v-for="(item, index) in token.redist.addresses">
