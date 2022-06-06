@@ -5,6 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css" rel="stylesheet">
 
         <title>Create your ERC20 token</title>
         <!-- color scheme https://coolors.co/0d0630-18314f-384e77-8bbeb2-e6f9af -->
@@ -38,24 +39,28 @@
                                         <input type="range" class="form-range disabled" min="0" max="100" step="0.1" id="burnRange" v-bind:value="100 - token.redist.addresses.reduce((previousValue, item) => (previousValue + item.amt), 0) - token.redist.holder" disabled>
                                         <label for="holdRange" class="form-label">Holder Redistribution: {{ token.redist.holder }}%</label>
                                         <input type="range" class="form-range" min="0" max="100" step="0.1" id="holdRange" v-model="token.redist.holder" readonly>
-                                        <div class="row" v-for="(item, index) in token.redist.addresses">
-                                            <div class="col" style="vertical-align: middle;">
-                                                {{ token.redist.addresses[index].addr }}
-                                            </div>
-                                            <div class="col-md-auto" style="vertical-align: middle;">
-                                                {{ token.redist.addresses[index].amt }}%
-                                            </div>
-                                            <div class="col-md-auto" style="vertical-align: middle;">
-                                                <a href="#" v-on:click="token.redist.addresses.splice(index, 1)">Remove</a>
+                                        <div class="container">
+                                            <div class="row" v-for="(item, index) in token.redist.addresses">
+                                                <div class="col" style="vertical-align: middle;">
+                                                    {{ token.redist.addresses[index].addr }}
+                                                </div>
+                                                <div class="col-md-auto" style="vertical-align: middle;">
+                                                    {{ token.redist.addresses[index].amt }}%
+                                                </div>
+                                                <div class="col-md-auto" style="vertical-align: middle;">
+                                                    <a href="#" v-on:click="token.redist.addresses.splice(index, 1)">Remove</a>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="row">
-                                            <div class="col-12">
-                                                <div class="input-group">
-                                                    <input type="text" class="form-control" v-model="token.redist.temp.addr" placeholder="Ethereum Address (0x000...)">
-                                                    <input type="number" class="form-control" v-model="token.redist.temp.amt" placeholder="Redistribution Percent (e.g. 5)">
-                                                    <span class="input-group-text">%</span>
-                                                    <button class="btn btn-outline-primary" v-on:click="token.redist.addresses.push({ addr: token.redist.temp.addr, amt: token.redist.temp.amt })">Add</button>
+                                        <div class="container">
+                                            <div class="row">
+                                                <div class="col-12">
+                                                    <div class="input-group">
+                                                        <input type="text" class="form-control" v-model="token.redist.temp.addr" placeholder="Ethereum Address (0x000...)">
+                                                        <input type="number" class="form-control" v-model="token.redist.temp.amt" placeholder="Redistribution Percent (e.g. 5)">
+                                                        <span class="input-group-text">%</span>
+                                                        <button class="btn btn-outline-primary" v-on:click="token.redist.addresses.push({ addr: token.redist.temp.addr, amt: token.redist.temp.amt })">Add</button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -69,15 +74,17 @@
                                     </div>
                                 </div>
                                 <div class="tab-pane fade" id="v-pills-supply" role="tabpanel" aria-labelledby="v-pills-supply-tab">
-                                    <div class="row" v-for="(item, index) in token.supply">
-                                        <div class="col" style="vertical-align: middle;">
-                                            {{ token.supply[index].addr }}
-                                        </div>
-                                        <div class="col-md-auto" style="vertical-align: middle;">
-                                            {{ token.supply[index].amt }}%
-                                        </div>
-                                        <div class="col-md-auto" style="vertical-align: middle;">
-                                            <a href="#" v-on:click="token.supply.splice(index, 1)">Remove</a>
+                                    <div class="container">
+                                        <div class="row" v-for="(item, index) in token.supply">
+                                            <div class="col" style="vertical-align: middle;">
+                                                {{ token.supply[index].addr }}
+                                            </div>
+                                            <div class="col-md-auto" style="vertical-align: middle;">
+                                                {{ token.supply[index].amt }} {{ token.meta.symbol }}
+                                            </div>
+                                            <div class="col-md-auto" style="vertical-align: middle;">
+                                                <a href="#" v-on:click="token.supply.splice(index, 1)">Remove</a>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="input-group">
@@ -87,13 +94,53 @@
                                         <button class="btn btn-outline-primary" v-on:click="token.supply.push({ addr: token.tempSupply.addr, amt: token.tempSupply.amt })">Add</button>
                                     </div>
                                 </div>
-                                <div class="tab-pane fade show active" id="v-pills-deploy" role="tabpanel" aria-labelledby="v-pills-deploy-tab">
+                                <div class="tab-pane fade" id="v-pills-deploy" role="tabpanel" aria-labelledby="v-pills-deploy-tab">
+                                    <div class="alert alert-warning" role="alert" v-if="deploymentStep == 0">
+                                        <i class="bi bi-exclamation-circle"></i> Double-check all the information below before deploying. It can't be changed afterwards!
+                                    </div>
+                                    <hr/>
+                                    <div class="input-group mb-3" v-if="deploymentStep == 0">
+                                        <span class="input-group-text" id="name-addon">Name</span>
+                                        <input type="text" class="form-control" placeholder="Name" aria-label="Name" aria-describedby="name-addon" readonly v-model="token.meta.name">
+                                    </div>
+                                    <div class="input-group mb-3" v-if="deploymentStep == 0">
+                                        <span class="input-group-text" id="symbol-addon">Symbol</span>
+                                        <input type="text" class="form-control" placeholder="Symbol" aria-label="Symbol" aria-describedby="symbol-addon" readonly v-model="token.meta.symbol">
+                                    </div>
+                                    <hr/>
+                                    <div class="input-group mb-3" v-if="deploymentStep == 0">
+                                        <span class="input-group-text" id="fee-addon">Fee</span>
+                                        <input type="text" class="form-control" placeholder="Fee" aria-label="Fee" aria-describedby="fee-addon" readonly v-bind:value="`${token.redist.fee}%`">
+                                    </div>
+                                    <br/>
+                                    <div class="input-group mb-3" v-if="deploymentStep == 0">
+                                        <span class="input-group-text" id="burn-addon">Burned</span>
+                                        <input type="text" class="form-control" placeholder="Burn" aria-label="Burn" aria-describedby="burn-addon" readonly v-bind:value="`${100 - token.redist.addresses.reduce((previousValue, item) => (previousValue + item.amt), 0) - token.redist.holder}%`">
+                                    </div>
+                                    <div v-if="token.redist.fee != 0 && deploymentStep == 0">
+                                        <div class="input-group mb-3" v-for="(item, index) in token.redist.addresses">
+                                            <span class="input-group-text" v-bind:id="`redist-addon${index}`">{{ item.addr }}</span>
+                                            <input type="text" class="form-control" placeholder="Redist" aria-label="Redist" v-bind:aria-describedby="`redist-addon${index}`" readonly v-bind:value="`${item.amt}%`">
+                                        </div>
+                                    </div>
+                                    <hr/>
+                                    <div class="input-group mb-3" v-if="deploymentStep == 0">
+                                        <span class="input-group-text" id="isupply-addon">Initial Supply</span>
+                                        <input type="text" class="form-control" placeholder="Initial Supply" aria-label="Initial Supply" aria-describedby="isupply-addon" readonly v-bind:value="`${token.redist.fee}%`">
+                                    </div>
+                                    <br/>
+                                    <div class="input-group mb-3" v-for="(item, index) in token.supply">
+                                        <span class="input-group-text" v-bind:id="`redist-addon${index}`">{{ item.addr }}</span>
+                                        <input type="text" class="form-control" placeholder="Redist" aria-label="Redist" v-bind:aria-describedby="`redist-addon${index}`" readonly v-bind:value="`${item.amt} ${token.meta.symbol}`">
+                                    </div>
+                                    <hr/>
                                     <div class="progress" v-if="deploymentStep != 0">
                                         <div class="progress-bar" role="progressbar" v-bind:aria-valuenow="deploymentStep" v-bind:style="{ width: `${deploymentStep * 4}%` }" aria-valuemin="0" aria-valuemax="100"></div>
                                     </div>
-                                    <button v-on:click="deploy" class="btn btn-primary" v-bind:class="{ disabled: deploymentStep != 0 }" type="button" v-bind:disabled="deploymentStep != 0">
-                                        <span v-if="deploymentStep != 0" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                        <span v-if="deploymentStep != 0">Deploying...</span>
+                                    <button v-on:click="deploy" class="btn btn-primary w-100" v-bind:class="{ disabled: deploymentStep != 0 }" type="button" v-bind:disabled="deploymentStep != 0">
+                                        <span v-if="deploymentStep != 0 && deploymentStep != 2" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                        <span v-if="deploymentStep != 0 && deploymentStep != 2">Deploying...</span>
+                                        <span v-if="deploymentStep == 2">Deployed!</span>
                                         <span v-if="deploymentStep == 0">Deploy</span>
                                     </button>
                                 </div>
