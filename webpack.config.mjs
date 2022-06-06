@@ -1,13 +1,13 @@
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import { VueLoaderPlugin } from 'vue-loader';
+import NodePolyfillPlugin from 'node-polyfill-webpack-plugin';
 
 export default {
-  entry: './src/index.ts',
+  entry: './src/index.js',
   module: {
     rules: [
+      { test: /\.vue$/, use: 'vue-loader' },
       { test: /\.js$/, use: 'babel-loader' },
-      { test: /\.ts$/, use: ['ts-loader', 'babel-loader'] },
-      { test: /\.vue$/, use: ['ts-loader', 'vue-loader'] },
       { test: /\.css$/, use: ['vue-style-loader', 'css-loader'] },
     ]
   }, plugins: [
@@ -15,5 +15,6 @@ export default {
       template: './src/index.html',
     }),
     new VueLoaderPlugin(),
+    new NodePolyfillPlugin(),
   ]
 };

@@ -1,7 +1,7 @@
-<script setup lang="ts">
+<script setup>
 import { ref } from "vue";
 import Web3Modal from "web3modal";
-import ethers from "ethers";
+import * as ethers from "ethers";
 import ethProvider from "eth-provider";
 import WalletConnectProvider from "@walletconnect/web3-provider"
 import "bootstrap";
@@ -31,7 +31,7 @@ const token = ref({
 const deploymentStep = ref(0);
 
 
-async function deploy(event : MouseEvent) : Promise<void> {
+async function deploy(event) {
     // Login
     this.deploymentStep = 1;
     const providerOptions = {
