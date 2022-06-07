@@ -175,7 +175,7 @@ async function deploy(event) {
 
     const contract = await factory.deploy();
     const address = contract.address;
-    token.deployment.tx = `${txExplorerUrls[await provider.getNetwork().then(({ chainId } => chainId))]}${contract.deployTransaction.hash}`;
+    token.deployment.tx = `${txExplorerUrls[await provider.getNetwork().then(({ chainId }) => chainId)]}${contract.deployTransaction.hash}`;
 
     // Wait for transaction to be mined
     this.deploymentStep = 4;
@@ -184,7 +184,7 @@ async function deploy(event) {
     // Set token metadata
     this.deploymentStep = 5;
 
-    const validForwarders = forwarders[await provider.getNetwork().then(({ chainId } => chainId))];
+    const validForwarders = forwarders[await provider.getNetwork().then(({ chainId }) => chainId)];
 
     const tx = await contract.multicall(await Promise.all([
         // Metadata
