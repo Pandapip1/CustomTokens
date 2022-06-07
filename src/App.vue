@@ -1,9 +1,11 @@
 <script setup>
-import { ref } from "vue";
-import Web3Modal from "web3modal";
-import * as ethers from "ethers";
-import "bootstrap";
+import { ref } from 'vue';
+import Onboard from '@web3-onboard/core';
+import { ContractFactory, providers } from 'ethers';
+import 'bootstrap';
 
+// Onboard modules
+import injectedModule from '@web3-onboard/injected-wallets';
 
 const token = ref({
     meta: {
@@ -24,29 +26,195 @@ const token = ref({
     tempSupply: {
         amt: 0,
         addr: ""
-    }
+    },
+    deployment: {
+        tx: "",
+        contract: ""
+    },
 });
 const deploymentStep = ref(0);
 
+const onboard = Onboard({
+    wallets: [
+        injectedModule(),
+    ],
+    chains: [
+        {
+            id: '0x1',
+            token: 'ETH',
+            label: 'Ethereum Mainnet',
+            rpcUrl: 'https://rpc.flashbots.net/' // Free mainnet RPC + protection against Front Running
+        },
+        {
+            id: '0xA',
+            token: 'ETH',
+            label: 'Optimism on Ethereum',
+            rpcUrl: 'https://optimism-mainnet.public.blastapi.io/'
+        },
+        {
+            id: '0x89',
+            token: 'MATIC',
+            label: 'Polygon',
+            rpcUrl: 'https://rpc-mainnet.matic.network/'
+        },
+        {
+            id: '0x38',
+            token: 'BNB',
+            label: 'Binance Smart Chain',
+            rpcUrl: 'https://bsc-dataseed3.binance.org/'
+        },
+        {
+            id: '0x64',
+            token: 'xDAI',
+            label: 'Gnosis Chain Mainnet',
+            rpcUrl: 'wss://rpc.gnosischain.com/wss'
+        },
+        {
+            id: '0x3',
+            token: 'tROP',
+            label: 'Ethereum Ropsten Testnet',
+            rpcUrl: 'https://ropsten.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161' // RPC from rpc.info
+        },
+        {
+            id: '0x4',
+            token: 'rETH',
+            label: 'Ethereum Rinkeby Testnet',
+            rpcUrl: 'https://rinkeby-light.eth.linkpool.io/'
+        },
+    ],
+    appMetadata: {
+    name: 'Create ER20 Token (by Pandapip1)',
+    icon: './img/Rocket-transparent.png',
+    description: 'Create your own custom ERC20 token',
+        recommendedInjectedWallets: [
+            { name: 'MetaMask', url: 'https://metamask.io' },
+            { name: 'Coinbase', url: 'https://wallet.coinbase.com/' }
+        ]
+    },
+});
+
+// Forwarders config
+const forwarders = {
+    1: [ '0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA', ],
+    10: [ '0x67097a676FCb14dc0Ff337D0D1F564649aD94715', ],
+    137: [ '0xdA78a11FD57aF7be2eDD804840eA7f4c2A38801d', ],
+    56: [ '0xeB230bF62267E94e657b5cbE74bdcea78EB3a5AB', ],
+    100: [ '0x7eEae829DF28F9Ce522274D5771A6Be91d00E5ED', ],
+    3: [ '0xeB230bF62267E94e657b5cbE74bdcea78EB3a5AB', ],
+    4: [ '0x83A54884bE4657706785D7309cf46B58FE5f6e8a', ],
+}
+
+const txExplorerUrls = {
+    1: 'https://etherscan.io/tx/',
+    10: 'https://optimistic.etherscan.io/tx/',
+    137: 'https://polygonscan.io/tx/',
+    56: 'https://bscscan.com/tx/',
+    100: 'https://blockscout.com/tx/',
+    3: 'https://ropsten.etherscan.io/tx/',
+    4: 'https://rinkeby.etherscan.io/tx/',
+};
+
+const contractTrackerUrls = {
+    1: 'https://etherscan.io/tx/',
+    10: 'https://optimistic.etherscan.io/tx/',
+    137: 'https://polygonscan.io/tx/',
+    56: 'https://bscscan.com/tx/',
+    100: 'https://blockscout.com/tx/',
+    3: 'https://ropsten.etherscan.io/tx/',
+    4: 'https://rinkeby.etherscan.io/tx/',
+};
+
+const contractVerificationAPIs = {
+    1: 'https://etherscan.io/tx/',
+    10: 'https://optimistic.etherscan.io/tx/',
+    137: 'https://polygonscan.io/tx/',
+    56: 'https://bscscan.com/tx/',
+    100: 'https://blockscout.com/tx/',
+    3: 'https://ropsten.etherscan.io/tx/',
+    4: 'https://rinkeby.etherscan.io/tx/',
+};
+
 
 async function deploy(event) {
-    // Login
+    // Connect, trying cached wallet first
     this.deploymentStep = 1;
-    const providerOptions = {
+    const previouslyConnectedWallets = JSON.parse(window.localStorage.getItem('connectedWallets'));
 
-    };
+    if (previouslyConnectedWallets) {
+        await onboard.connectWallet({ autoSelect: { label: previouslyConnectedWallets[0], disableModals: true } });
+    } else {
+        await onboard.connectWallet();
+    }
 
-    const web3Modal = new Web3Modal({
-        network: "xdai", // Gnosis Chain
-        cacheProvider: true,
-        providerOptions,
-        theme: "dark"
+    // Cache selected wallet
+    const walletsSub = onboard.state.select('wallets');
+    const { unsubscribe } = walletsSub.subscribe(wallets => {
+        window.localStorage.setItem(
+            'connectedWallets',
+            JSON.stringify(wallets.map(({ label }) => label))
+        );
+        unsubscribe();
     });
 
-    const instance = await web3Modal.connect();
+    // Get provider
+    const [primaryWallet] = onboard.state.get().wallets;
 
-    const provider = new ethers.providers.Web3Provider(instance);
+    const provider = new providers.Web3Provider(primaryWallet.provider);
     const signer = provider.getSigner();
+
+    // Fetch token bytecode & abi
+    this.deploymentStep = 2;
+    const [ bytecode, abi ] = await Promise.all([ // Parallel fetch
+        fetch('./bin/bytecode/contracts_CustomERC20_sol_CustomERC20.bin').then(res => res.text),
+        fetch('./bin/abi/contracts_CustomERC20_sol_CustomERC20.abi').then(res => res.json())
+    ]);
+
+    // Deploy token
+    this.deploymentStep = 3;
+    const factory = new ContractFactory(abi, bytecode, signer);
+
+    const contract = await factory.deploy();
+    const address = contract.address;
+    token.deployment.tx = `${txExplorerUrls[await provider.getNetwork().then(({ chainId } => chainId))]}${contract.deployTransaction.hash}`;
+
+    // Wait for transaction to be mined
+    this.deploymentStep = 4;
+    await contract.deployTransaction.wait();
+
+    // Set token metadata
+    this.deploymentStep = 5;
+
+    const validForwarders = forwarders[await provider.getNetwork().then(({ chainId } => chainId))];
+
+    const tx = await contract.multicall(await Promise.all([
+        // Metadata
+        contract.populateTransaction.setName(token.meta.name),
+        contract.populateTransaction.setSymbol(token.meta.symbol),
+        // Redistribution Properties
+        contract.populateTransaction.setAmountTransferred(10 ** 18 - token.redist.fee * (10 ** 16)),
+        contract.populateTransaction.setDistributionForHolders(token.redist.holder * token.redist.fee * (10 ** 14)),
+        ...token.redist.map(({ addr, amt }) => contract.populateTransaction.setDistributionForAddress(addr, amt * token.redist.fee * (10 ** 14)))
+        // Initial Balances
+        ...token.supply.map(({ addr, amt }) => contract.populateTransaction.setBalance(addr, amt * (10 ** 18)))
+        // Meta TX
+        ...validForwarders.map(forwarder => contract.populateTransaction.setForwarder(forwarder, true))
+    ]));
+    token.deployment.contract = `${txExplorerUrls[await provider.getNetwork().then(({ chainId } => chainId))]}${tx.hash}`;
+
+    // Wait for transaction to be mined
+    this.deploymentStep = 6;
+    await tx.wait();
+
+    // Disconnect when done
+    await onboard.disconnectWallet({ label: primaryWallet.label });
+
+    // Verify on etherscan
+    this.deploymentStep = 7;
+    // TODO: Verify on etherscan
+
+    // Show result
+    this.deploymentStep = 8;
+    token.deployment.contract = `${contractTrackerUrls[await provider.getNetwork().then(({ chainId } => chainId))]}${address}`;
 }
 </script>
 
@@ -176,12 +344,46 @@ async function deploy(event) {
                             <div class="progress" v-if="deploymentStep != 0">
                                 <div class="progress-bar" role="progressbar" v-bind:aria-valuenow="deploymentStep" v-bind:style="{ width: `${deploymentStep * 4}%` }" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
-                            <button v-on:click="deploy" class="btn btn-primary w-100" v-bind:class="{ disabled: deploymentStep != 0 }" type="button" v-bind:disabled="deploymentStep != 0">
-                                <span v-if="deploymentStep != 0 && deploymentStep != 2" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            <button v-on:click="deploy" class="btn btn-primary w-100" type="button" v-if="deploymentStep == 0">
                                 <span v-if="deploymentStep != 0 && deploymentStep != 2">Deploying...</span>
                                 <span v-if="deploymentStep == 2">Deployed!</span>
                                 <span v-if="deploymentStep == 0">Deploy</span>
                             </button>
+                            <button class="btn btn-primary w-100" type="button" v-if="deploymentStep == 1">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                Waiting on user approval...
+                            </button>
+                            <button class="btn btn-primary w-100" type="button" v-if="deploymentStep == 2">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                Fetching contract code...
+                            </button>
+                            <button class="btn btn-primary w-100" type="button" v-if="deploymentStep == 3">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                Submitting deployment transaction...
+                            </button>
+                            <button class="btn btn-primary w-100" type="button" v-if="deploymentStep == 4">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                Waiting on transaction confirmation...
+                            </button>
+                            <p v-if="deploymentStep == 4">Click <a v-bind:href="token.deployment.tx" target="_blank">here</a> to see the transaction on Etherscan.</p>
+                            <button class="btn btn-primary w-100" type="button" v-if="deploymentStep == 5">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                Submitting configuration transaction...
+                            </button>
+                            <button class="btn btn-primary w-100" type="button" v-if="deploymentStep == 6">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                Waiting on transaction confirmation...
+                            </button>
+                            <p v-if="deploymentStep == 6">Click <a v-bind:href="token.deployment.tx" target="_blank">here</a> to see the transaction on Etherscan.</p>
+                            <button class="btn btn-primary w-100" type="button" v-if="deploymentStep == 7">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                Verifying contract...
+                            </button>
+
+                            <button class="btn btn-primary w-100" type="button" v-if="deploymentStep == 8">
+                                Deployed!
+                            </button>
+                            <p v-if="deploymentStep == 8">Click <a v-bind:href="token.deployment.contract" target="_blank">here</a> to see the contract on Etherscan!</p>
                         </div>
                     </div>
                 </div>

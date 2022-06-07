@@ -16,5 +16,8 @@ export default {
     }),
     new VueLoaderPlugin(),
     new NodePolyfillPlugin(),
-  ]
+  ],
+  experiments: {
+    asyncWebAssembly: true
+  },
 };
