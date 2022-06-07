@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
-// Made with https://github.com/Pandapip1/CustomTokens
+// https://github.com/Pandapip1/CustomTokens
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/Multicall.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./ERC2771Context.sol";
+import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 
 contract CustomERC20 is Multicall, Ownable, ERC2771Context {
     // Libraries
@@ -30,6 +30,9 @@ contract CustomERC20 is Multicall, Ownable, ERC2771Context {
 
     uint256 public _privateDistributionAmount; // Amount to add to balances
 
+    // MetaTX
+    mapping(address => bool) internal _forwarders;
+
     // Modifiers
     modifier initialized() {
         require(owner() == address(0));
@@ -37,7 +40,7 @@ contract CustomERC20 is Multicall, Ownable, ERC2771Context {
     }
 
     // Constructor
-    constructor() ERC2771Context() {}
+    constructor() ERC2771Context(address(0)) {}
 
     // Initialization Functions
     function setName(string memory newName) public onlyOwner {
@@ -74,7 +77,7 @@ contract CustomERC20 is Multicall, Ownable, ERC2771Context {
     }
 
     function setForwarder(address forwarder, bool isForwarder) public onlyOwner {
-        _setTrustedForwarder(forwarder, isForwarder);
+        _forwarders[forwarder] = isForwarder;
     }
 
     // Custom Getters for Custom Initialization
@@ -248,7 +251,7 @@ contract CustomERC20 is Multicall, Ownable, ERC2771Context {
         internal
         view
         override(Context, ERC2771Context)
-        returns (bytes memory)
+        returns (bytes calldata)
     {
         return ERC2771Context._msgData();
     }
@@ -260,5 +263,10 @@ contract CustomERC20 is Multicall, Ownable, ERC2771Context {
         returns (address)
     {
         return ERC2771Context._msgSender();
+    }
+
+    // Meta TX custom forwarders
+    function isTrustedForwarder(address forwarder) public view override returns (bool) {
+        return _forwarders[forwarder];
     }
 }
