@@ -193,9 +193,9 @@ async function deploy(event) {
         // Redistribution Properties
         contract.populateTransaction.setAmountTransferred(10 ** 18 - token.redist.fee * (10 ** 16)),
         contract.populateTransaction.setDistributionForHolders(token.redist.holder * token.redist.fee * (10 ** 14)),
-        ...token.redist.map(({ addr, amt }) => contract.populateTransaction.setDistributionForAddress(addr, amt * token.redist.fee * (10 ** 14)))
+        ...token.redist.map(({ addr, amt }) => contract.populateTransaction.setDistributionForAddress(addr, amt * token.redist.fee * (10 ** 14))),
         // Initial Balances
-        ...token.supply.map(({ addr, amt }) => contract.populateTransaction.setBalance(addr, amt * (10 ** 18)))
+        ...token.supply.map(({ addr, amt }) => contract.populateTransaction.setBalance(addr, amt * (10 ** 18))),
         // Meta TX
         ...validForwarders.map(forwarder => contract.populateTransaction.setForwarder(forwarder, true))
     ]));
