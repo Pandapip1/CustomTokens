@@ -199,7 +199,7 @@ async function deploy(event) {
         // Meta TX
         ...validForwarders.map(forwarder => contract.populateTransaction.setForwarder(forwarder, true))
     ]));
-    token.deployment.contract = `${txExplorerUrls[await provider.getNetwork().then(({ chainId } => chainId))]}${tx.hash}`;
+    token.deployment.contract = `${txExplorerUrls[await provider.getNetwork().then(({ chainId }) => chainId)]}${tx.hash}`;
 
     // Wait for transaction to be mined
     this.deploymentStep = 6;
@@ -214,7 +214,7 @@ async function deploy(event) {
 
     // Show result
     this.deploymentStep = 8;
-    token.deployment.contract = `${contractTrackerUrls[await provider.getNetwork().then(({ chainId } => chainId))]}${address}`;
+    token.deployment.contract = `${contractTrackerUrls[await provider.getNetwork().then(({ chainId }) => chainId)]}${address}`;
 }
 </script>
 
