@@ -135,7 +135,7 @@ const contractVerificationAPIs = {
 };
 
 
-async function deploy(event) {
+async function deploy() {
     // Connect, trying cached wallet first
     this.deploymentStep = 1;
     const previouslyConnectedWallets = JSON.parse(window.localStorage.getItem('connectedWallets'));
@@ -333,54 +333,52 @@ async function deploy(event) {
                                 <hr/>
                                 <div class="input-group mb-3">
                                     <span class="input-group-text" id="isupply-addon">Initial Supply</span>
-                                    <input type="text" class="form-control" placeholder="Initial Supply" aria-label="Initial Supply" aria-describedby="isupply-addon" readonly v-bind:value="`${token.redist.fee}%`">
+                                    <input type="text" class="form-control" placeholder="Initial Supply" aria-label="Initial Supply" aria-describedby="isupply-addon" readonly v-bind:value="`${token.supply.reduce((previousValue, item) => previousValue + item.amt, 0)} ${token.meta.symbol}`">
                                 </div>
                                 <div class="input-group mb-3" v-for="(item, index) in token.supply" v-bind:key="item.addr">
                                     <span class="input-group-text" v-bind:id="`redist-addon${index}`">{{ item.addr }}</span>
                                     <input type="text" class="form-control" placeholder="Redist" aria-label="Redist" v-bind:aria-describedby="`redist-addon${index}`" readonly v-bind:value="`${item.amt} ${token.meta.symbol}`">
                                 </div>
+                            <button v-on:click="deploy()" class="btn btn-primary w-100" type="button">
+                                Deploy!
+                            </button>
                             <hr/>
                             </div>
                             <div class="progress" v-if="deploymentStep != 0">
                                 <div class="progress-bar" role="progressbar" v-bind:aria-valuenow="deploymentStep" v-bind:style="{ width: `${deploymentStep * 4}%` }" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
-                            <button v-on:click="deploy" class="btn btn-primary w-100" type="button" v-if="deploymentStep == 0">
-                                <span v-if="deploymentStep != 0 && deploymentStep != 2">Deploying...</span>
-                                <span v-if="deploymentStep == 2">Deployed!</span>
-                                <span v-if="deploymentStep == 0">Deploy</span>
-                            </button>
-                            <button class="btn btn-primary w-100" type="button" v-if="deploymentStep == 1">
+                            <button disabled class="btn btn-primary w-100 disabled" type="button" v-if="deploymentStep == 1">
                                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                                 Waiting on user approval...
                             </button>
-                            <button class="btn btn-primary w-100" type="button" v-if="deploymentStep == 2">
+                            <button disabled class="btn btn-primary w-100 disabled" type="button" v-if="deploymentStep == 2">
                                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                                 Fetching contract code...
                             </button>
-                            <button class="btn btn-primary w-100" type="button" v-if="deploymentStep == 3">
+                            <button disabled class="btn btn-primary w-100 disabled" type="button" v-if="deploymentStep == 3">
                                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                                 Submitting deployment transaction...
                             </button>
-                            <button class="btn btn-primary w-100" type="button" v-if="deploymentStep == 4">
+                            <button disabled class="btn btn-primary w-100 disabled" type="button" v-if="deploymentStep == 4">
                                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                                 Waiting on transaction confirmation...
                             </button>
                             <p v-if="deploymentStep == 4">Click <a v-bind:href="token.deployment.tx" target="_blank">here</a> to see the transaction on Etherscan.</p>
-                            <button class="btn btn-primary w-100" type="button" v-if="deploymentStep == 5">
+                            <button disabled class="btn btn-primary w-100 disabled" type="button" v-if="deploymentStep == 5">
                                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                                 Submitting configuration transaction...
                             </button>
-                            <button class="btn btn-primary w-100" type="button" v-if="deploymentStep == 6">
+                            <button disabled class="btn btn-primary w-100 disabled" type="button" v-if="deploymentStep == 6">
                                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                                 Waiting on transaction confirmation...
                             </button>
                             <p v-if="deploymentStep == 6">Click <a v-bind:href="token.deployment.tx" target="_blank">here</a> to see the transaction on Etherscan.</p>
-                            <button class="btn btn-primary w-100" type="button" v-if="deploymentStep == 7">
+                            <button disabled class="btn btn-primary w-100 disabled" type="button" v-if="deploymentStep == 7">
                                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                                 Verifying contract...
                             </button>
 
-                            <button class="btn btn-primary w-100" type="button" v-if="deploymentStep == 8">
+                            <button disabled class="btn btn-primary w-100 disabled" type="button" v-if="deploymentStep == 8">
                                 Deployed!
                             </button>
                             <p v-if="deploymentStep == 8">Click <a v-bind:href="token.deployment.contract" target="_blank">here</a> to see the contract on Etherscan!</p>
