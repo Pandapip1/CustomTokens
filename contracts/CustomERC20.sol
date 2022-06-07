@@ -251,7 +251,7 @@ contract CustomERC20 is Multicall, Ownable, ERC2771Context {
         internal
         view
         override(Context, ERC2771Context)
-        returns (bytes memory)
+        returns (bytes calldata)
     {
         return ERC2771Context._msgData();
     }
