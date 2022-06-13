@@ -192,16 +192,25 @@ async function deploy() {
 
     const tx = await contract.multicall(await Promise.all([
         // Metadata
-        contract.populateTransaction.setName(token.value.meta.name),
-        contract.populateTransaction.setSymbol(token.value.meta.symbol),
+        contract.interface.encodeFunctionData('setName', [token.value.meta.name]),
+        contract.interface.encodeFunctionData('setSymbol', [token.value.meta.symbol]),
+        
         // Redistribution Properties
-        contract.populateTransaction.setAmountTransferred(10 ** 18 - token.value.redist.fee * (10 ** 16)),
-        contract.populateTransaction.setDistributionForHolders(token.value.redist.holder * token.value.redist.fee * (10 ** 14)),
-        ...token.value.redist.addresses.map(({ addr, amt }) => contract.populateTransaction.setDistributionForAddress(addr, amt * token.value.redist.fee * (10 ** 14))),
+        contract.interface.encodeFunctionData('setAmountTransferred', [`${10 ** 18 - token.value.redist.fee * (10 ** 16)}`]),
+        contract.interface.encodeFunctionData('setDistributionForHolders', [`${token.value.redist.holder * token.value.redist.fee * (10 ** 14)}`]),
+        ...token.value.redist.addresses.map(
+            ({ addr, amt }) => contract.interface.encodeFunctionData('setDistributionForAddress', [addr, `${amt * token.value.redist.fee * (10 ** 14)}`])
+        ),
+        
         // Initial Balances
-        ...token.value.supply.map(({ addr, amt }) => contract.populateTransaction.setBalance(addr, amt * (10 ** 18))),
+        ...token.value.supply.map(
+            ({ addr, amt }) => contract.interface.encodeFunctionData('setBalance', [addr, `${amt * (10 ** 18)}`])
+        ),
+        
         // Meta TX
-        ...validForwarders.map(forwarder => contract.populateTransaction.setForwarder(forwarder, true))
+        ...validForwarders.map(
+            forwarder => contract.interface.encodeFunctionData('setForwarder', [forwarder, true])
+        )
     ]));
     token.value.deployment.contract = `${txExplorerUrls[await provider.getNetwork().then(({ chainId }) => chainId)]}${tx.hash}`;
 
