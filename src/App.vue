@@ -154,12 +154,10 @@ async function deploy() {
     // Fetch token bytecode & abi
     deploymentStep.value++;
     const [ bytecode, abi ] = await Promise.all([ // Parallel fetch
-        fetch('https://pandapip1.github.io/CustomTokens/bin/bytecode/contracts_CustomERC20_sol_CustomERC20.bin').then(res => res.text),
+        fetch('https://pandapip1.github.io/CustomTokens/bin/bytecode/contracts_CustomERC20_sol_CustomERC20.bin').then(res => res.text()),
         fetch('https://pandapip1.github.io/CustomTokens/bin/abi/contracts_CustomERC20_sol_CustomERC20.abi').then(res => res.json())
     ]);
     
-    console.log({ bytecode, abi }); // Debug log
-
     // Deploy token
     deploymentStep.value++;
     const factory = new ContractFactory(abi, bytecode, signer);
