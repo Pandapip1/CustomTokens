@@ -140,25 +140,10 @@ const contractVerificationAPIs = {
 
 
 async function deploy() {
-    // Connect, trying cached wallet first
+    // Connect
     deploymentStep.value++;
-    const previouslyConnectedWallets = JSON.parse(window.localStorage.getItem('connectedWallets'));
 
-    if (previouslyConnectedWallets) {
-        await onboard.connectWallet({ autoSelect: { label: previouslyConnectedWallets[0], disableModals: true } });
-    } else {
-        await onboard.connectWallet();
-    }
-
-    // Cache selected wallet
-    const walletsSub = onboard.state.select('wallets');
-    const { unsubscribe } = walletsSub.subscribe(wallets => {
-        window.localStorage.setItem(
-            'connectedWallets',
-            JSON.stringify(wallets.map(({ label }) => label))
-        );
-        unsubscribe();
-    });
+    await onboard.connectWallet();
 
     // Get provider
     const [primaryWallet] = onboard.state.get().wallets;
