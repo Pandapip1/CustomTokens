@@ -175,7 +175,7 @@ async function deploy() {
 
     const contract = await factory.deploy();
     const address = contract.address;
-    token.value.deployment.tx.value = `${txExplorerUrls[await provider.getNetwork().then(({ chainId }) => chainId)]}${contract.deployTransaction.hash}`;
+    token.value.deployment.tx = `${txExplorerUrls[await provider.getNetwork().then(({ chainId }) => chainId)]}${contract.deployTransaction.hash}`;
 
     // Wait for transaction to be mined
     deploymentStep.value++;
