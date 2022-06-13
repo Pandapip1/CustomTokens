@@ -102,6 +102,7 @@ const forwarders = {
     100: [ '0x7eEae829DF28F9Ce522274D5771A6Be91d00E5ED', ],
     3: [ '0xeB230bF62267E94e657b5cbE74bdcea78EB3a5AB', ],
     4: [ '0x83A54884bE4657706785D7309cf46B58FE5f6e8a', ],
+    42: [ '0x7eEae829DF28F9Ce522274D5771A6Be91d00E5ED', ],
 }
 
 const txExplorerUrls = {
@@ -112,6 +113,7 @@ const txExplorerUrls = {
     100: 'https://blockscout.com/tx/',
     3: 'https://ropsten.etherscan.io/tx/',
     4: 'https://rinkeby.etherscan.io/tx/',
+    42: 'https://kovan.etherscan.io/tx/'
 };
 
 const contractTrackerUrls = {
@@ -122,6 +124,7 @@ const contractTrackerUrls = {
     100: 'https://blockscout.com/tx/',
     3: 'https://ropsten.etherscan.io/tx/',
     4: 'https://rinkeby.etherscan.io/tx/',
+    42: 'https://kovan.etherscan.io/tx/'
 };
 
 const contractVerificationAPIs = {
@@ -132,6 +135,7 @@ const contractVerificationAPIs = {
     100: 'https://blockscout.com/tx/',
     3: 'https://ropsten.etherscan.io/tx/',
     4: 'https://rinkeby.etherscan.io/tx/',
+    42: 'https://kovan.etherscan.io/tx/'
 };
 
 
@@ -193,7 +197,7 @@ async function deploy() {
         // Redistribution Properties
         contract.populateTransaction.setAmountTransferred(10 ** 18 - token.value.redist.fee * (10 ** 16)),
         contract.populateTransaction.setDistributionForHolders(token.value.redist.holder * token.value.redist.fee * (10 ** 14)),
-        ...token.value.redist.map(({ addr, amt }) => contract.populateTransaction.setDistributionForAddress(addr, amt * token.value.redist.fee * (10 ** 14))),
+        ...token.value.redist.addresses.map(({ addr, amt }) => contract.populateTransaction.setDistributionForAddress(addr, amt * token.value.redist.fee * (10 ** 14))),
         // Initial Balances
         ...token.value.supply.map(({ addr, amt }) => contract.populateTransaction.setBalance(addr, amt * (10 ** 18))),
         // Meta TX
