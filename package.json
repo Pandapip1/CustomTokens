@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dist": "rm -rf ./dist && webpack && mkdir -p ./dist/bin/bytecode && mkdir -p ./dist/bin/abi && npx solc --include-path node_modules/ --base-path . --bin contracts/CustomERC20.sol -o ./dist/bin/bytecode && npx solc --include-path node_modules/ --base-path . --abi contracts/CustomERC20.sol -o ./dist/bin/abi && cp -r img dist && cp -r contracts dist",
+    "dist": "rm -rf ./dist && webpack && mkdir -p ./dist/bin/bytecode && mkdir -p ./dist/bin/abi && mkdir -p ./dist/bin/json && npx solc --include-path node_modules/ --base-path . --bin contracts/CustomERC20.sol -o ./dist/bin/bytecode && npx solc --include-path node_modules/ --base-path . --abi contracts/CustomERC20.sol -o ./dist/bin/abi && solc --include-path node_modules/ --base-path . --standard-json contracts/CustomERC20.sol && cp -r img dist && cp -r contracts dist",
     "dev": "npm run dist && lite-server"
   },
   "repository": {
@@ -22,15 +22,7 @@
     "@openzeppelin/contracts": "^4.6.0",
     "@popperjs/core": "^2.11.5",
     "@web3-onboard/core": "^2.2.10",
-    "@web3-onboard/fortmatic": "^2.0.2",
-    "@web3-onboard/gnosis": "^2.0.1",
     "@web3-onboard/injected-wallets": "^2.0.7",
-    "@web3-onboard/ledger": "^2.1.0",
-    "@web3-onboard/magic": "^2.0.3",
-    "@web3-onboard/torus": "^2.0.1",
-    "@web3-onboard/trezor": "^2.1.0",
-    "@web3-onboard/walletconnect": "^2.0.1",
-    "@web3-onboard/walletlink": "^2.0.1",
     "bootstrap": "^5.1.3",
     "ethers": "^5.6.8",
     "lite-server": "^2.6.1",
