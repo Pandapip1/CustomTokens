@@ -9,7 +9,7 @@
     "compile-bytecode": "rm -rf ./dist/bin/bytecode && mkdir -p ./dist/bin/bytecode && npx solc --include-path node_modules/ --base-path . --bin contracts/CustomERC20.sol -o ./dist/bin/bytecode",
     "compile-abi": "rm -rf ./dist/bin/abi && mkdir -p ./dist/bin/abi && npx solc --include-path node_modules/ --base-path . --abi contracts/CustomERC20.sol -o ./dist/bin/abi",
     "compile-json": "rm -rf ./dist/bin/json && mkdir -p ./dist/bin/json && npx solc --include-path node_modules/ --base-path . --standard-json contracts/CustomERC20.sol -o ./dist/bin/json",
-    "compile": "npm run compile-bytecode && npm run compile-abi && npm run compile-json"
+    "compile": "npm run compile-bytecode && npm run compile-abi && npm run compile-json",
     "dist": "rm -rf ./dist && npm run webpack && npm run compile",
     "dev": "npm run dist && lite-server"
   },
