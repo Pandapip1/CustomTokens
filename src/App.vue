@@ -175,7 +175,7 @@ async function deploy() {
 
     const contract = await factory.deploy();
     const address = contract.address;
-    token.deployment.tx = `${txExplorerUrls[await provider.getNetwork().then(({ chainId }) => chainId)]}${contract.deployTransaction.hash}`;
+    token.value.deployment.tx.value = `${txExplorerUrls[await provider.getNetwork().then(({ chainId }) => chainId)]}${contract.deployTransaction.hash}`;
 
     // Wait for transaction to be mined
     deploymentStep.value++;
@@ -188,18 +188,18 @@ async function deploy() {
 
     const tx = await contract.multicall(await Promise.all([
         // Metadata
-        contract.populateTransaction.setName(token.meta.name),
-        contract.populateTransaction.setSymbol(token.meta.symbol),
+        contract.populateTransaction.setName(token.value.meta.name),
+        contract.populateTransaction.setSymbol(token.value.meta.symbol),
         // Redistribution Properties
-        contract.populateTransaction.setAmountTransferred(10 ** 18 - token.redist.fee * (10 ** 16)),
-        contract.populateTransaction.setDistributionForHolders(token.redist.holder * token.redist.fee * (10 ** 14)),
-        ...token.redist.map(({ addr, amt }) => contract.populateTransaction.setDistributionForAddress(addr, amt * token.redist.fee * (10 ** 14))),
+        contract.populateTransaction.setAmountTransferred(10 ** 18 - token.value.redist.fee * (10 ** 16)),
+        contract.populateTransaction.setDistributionForHolders(token.value.redist.holder * token.value.redist.fee * (10 ** 14)),
+        ...token.value.redist.map(({ addr, amt }) => contract.populateTransaction.setDistributionForAddress(addr, amt * token.value.redist.fee * (10 ** 14))),
         // Initial Balances
-        ...token.supply.map(({ addr, amt }) => contract.populateTransaction.setBalance(addr, amt * (10 ** 18))),
+        ...token.value.supply.map(({ addr, amt }) => contract.populateTransaction.setBalance(addr, amt * (10 ** 18))),
         // Meta TX
         ...validForwarders.map(forwarder => contract.populateTransaction.setForwarder(forwarder, true))
     ]));
-    token.deployment.contract = `${txExplorerUrls[await provider.getNetwork().then(({ chainId }) => chainId)]}${tx.hash}`;
+    token.value.deployment.contract = `${txExplorerUrls[await provider.getNetwork().then(({ chainId }) => chainId)]}${tx.hash}`;
 
     // Wait for transaction to be mined
     deploymentStep.value++;
@@ -214,7 +214,7 @@ async function deploy() {
 
     // Show result
     deploymentStep.value++;
-    token.deployment.contract = `${contractTrackerUrls[await provider.getNetwork().then(({ chainId }) => chainId)]}${address}`;
+    token.value.deployment.contract = `${contractTrackerUrls[await provider.getNetwork().then(({ chainId }) => chainId)]}${address}`;
 }
 </script>
 
