@@ -137,7 +137,7 @@ const contractVerificationAPIs = {
 
 async function deploy() {
     // Connect, trying cached wallet first
-    this.deploymentStep = 1;
+    deploymentStep = 1;
     const previouslyConnectedWallets = JSON.parse(window.localStorage.getItem('connectedWallets'));
 
     if (previouslyConnectedWallets) {
@@ -163,14 +163,14 @@ async function deploy() {
     const signer = provider.getSigner();
 
     // Fetch token bytecode & abi
-    this.deploymentStep = 2;
+    deploymentStep = 2;
     const [ bytecode, abi ] = await Promise.all([ // Parallel fetch
         fetch('./bin/bytecode/contracts_CustomERC20_sol_CustomERC20.bin').then(res => res.text),
         fetch('./bin/abi/contracts_CustomERC20_sol_CustomERC20.abi').then(res => res.json())
     ]);
 
     // Deploy token
-    this.deploymentStep = 3;
+    deploymentStep = 3;
     const factory = new ContractFactory(abi, bytecode, signer);
 
     const contract = await factory.deploy();
@@ -178,11 +178,11 @@ async function deploy() {
     token.deployment.tx = `${txExplorerUrls[await provider.getNetwork().then(({ chainId }) => chainId)]}${contract.deployTransaction.hash}`;
 
     // Wait for transaction to be mined
-    this.deploymentStep = 4;
+    deploymentStep = 4;
     await contract.deployTransaction.wait();
 
     // Set token metadata
-    this.deploymentStep = 5;
+    deploymentStep = 5;
 
     const validForwarders = forwarders[await provider.getNetwork().then(({ chainId }) => chainId)];
 
@@ -202,18 +202,18 @@ async function deploy() {
     token.deployment.contract = `${txExplorerUrls[await provider.getNetwork().then(({ chainId }) => chainId)]}${tx.hash}`;
 
     // Wait for transaction to be mined
-    this.deploymentStep = 6;
+    deploymentStep = 6;
     await tx.wait();
 
     // Disconnect when done
     await onboard.disconnectWallet({ label: primaryWallet.label });
 
     // Verify on etherscan
-    this.deploymentStep = 7;
+    deploymentStep = 7;
     // TODO: Verify on etherscan
 
     // Show result
-    this.deploymentStep = 8;
+    deploymentStep = 8;
     token.deployment.contract = `${contractTrackerUrls[await provider.getNetwork().then(({ chainId }) => chainId)]}${address}`;
 }
 </script>
