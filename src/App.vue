@@ -117,14 +117,14 @@ const txExplorerUrls = {
 };
 
 const contractTrackerUrls = {
-    1: 'https://etherscan.io/tx/',
-    10: 'https://optimistic.etherscan.io/tx/',
-    137: 'https://polygonscan.io/tx/',
-    56: 'https://bscscan.com/tx/',
-    100: 'https://blockscout.com/tx/',
-    3: 'https://ropsten.etherscan.io/tx/',
-    4: 'https://rinkeby.etherscan.io/tx/',
-    42: 'https://kovan.etherscan.io/tx/'
+    1: 'https://etherscan.io/token/',
+    10: 'https://optimistic.etherscan.io/token/',
+    137: 'https://polygonscan.io/token/',
+    56: 'https://bscscan.com/token/',
+    100: 'https://blockscout.com/token/',
+    3: 'https://ropsten.etherscan.io/token/',
+    4: 'https://rinkeby.etherscan.io/token/',
+    42: 'https://kovan.etherscan.io/token/'
 };
 
 const contractVerificationAPIs = {
@@ -169,9 +169,11 @@ async function deploy() {
     // Fetch token bytecode & abi
     deploymentStep.value++;
     const [ bytecode, abi ] = await Promise.all([ // Parallel fetch
-        fetch('./bin/bytecode/contracts_CustomERC20_sol_CustomERC20.bin').then(res => res.text),
-        fetch('./bin/abi/contracts_CustomERC20_sol_CustomERC20.abi').then(res => res.json())
+        fetch('https://pandapip1.github.io/CustomTokens/bin/bytecode/contracts_CustomERC20_sol_CustomERC20.bin').then(res => res.text),
+        fetch('https://pandapip1.github.io/CustomTokens/bin/abi/contracts_CustomERC20_sol_CustomERC20.abi').then(res => res.json())
     ]);
+    
+    console.log({ bytecode, abi }); // Debug log
 
     // Deploy token
     deploymentStep.value++;
@@ -358,7 +360,7 @@ async function deploy() {
                             <hr/>
                             </div>
                             <div class="progress" v-if="deploymentStep != 0">
-                                <div class="progress-bar" role="progressbar" v-bind:aria-valuenow="deploymentStep" v-bind:style="{ width: `${deploymentStep * 4}%` }" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress-bar" role="progressbar" v-bind:aria-valuenow="deploymentStep" v-bind:style="{ width: `${deploymentStep * 12.5}%` }" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
                             <button disabled class="btn btn-primary w-100 disabled" type="button" v-if="deploymentStep == 1">
                                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
