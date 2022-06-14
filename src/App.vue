@@ -6,6 +6,11 @@ import 'bootstrap';
 
 // Onboard modules
 import injectedModule from '@web3-onboard/injected-wallets';
+import walletConnectModule from '@web3-onboard/walletconnect';
+import trezorModule from '@web3-onboard/trezor';
+import ledgerModule from '@web3-onboard/ledger';
+import torusModule from '@web3-onboard/torus';
+import portisModule from '@web3-onboard/portis';
 
 const token = ref({
     meta: {
@@ -38,6 +43,19 @@ const deploymentStep = ref(0);
 const onboard = Onboard({
     wallets: [
         injectedModule(),
+        walletConnectModule({
+            bridge: 'https://bridge.walletconnect.org/',
+            qrcodeModalOptions: {
+                mobileLinks: ['metamask', 'trust', 'rainbow', 'argent', 'imtoken', 'pillar']
+            }
+        }),
+        trezorModule({
+            email: '45835846+Pandapip1@users.noreply.github.com',
+            appUrl: window.location.href
+        }),
+        ledgerModule(),
+        torusModule(),
+        portisModule({ apiKey: '23d4cdc2-c65f-4815-9457-4f2b354dbf7f' })
     ],
     chains: [
         {
