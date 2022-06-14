@@ -152,12 +152,12 @@ const contractVerificationAPIs = {
 
 const contractVerificationAPIData = {
     1: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}',
-    10: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input',
-    137: 'apikey=JY1MU9UFEHYD9JJ9PJDUWDT1PNX49V2633&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input',
-    56: 'apikey=N88F83B7U9WEN67M7NUG9RNA2VQVYE7V6U&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input',
-    3: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecod&codeformat=solidity-standard-json-input',
-    4: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input',
-    42: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input',
+    10: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}',
+    137: 'apikey=JY1MU9UFEHYD9JJ9PJDUWDT1PNX49V2633&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}',
+    56: 'apikey=N88F83B7U9WEN67M7NUG9RNA2VQVYE7V6U&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}',
+    3: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecod&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}',
+    4: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}',
+    42: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}',
 };
 
 
