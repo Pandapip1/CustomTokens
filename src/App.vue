@@ -132,7 +132,7 @@ const contractVerificationAPIs = {
 
 // if you are a developer considering stealing the API key here, then go away, and you are why we can't have nice things.
 
-const contractVerificationAPIDatas = {
+const contractVerificationAPIData = {
     1: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}',
     10: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input',
     137: 'apikey=JY1MU9UFEHYD9JJ9PJDUWDT1PNX49V2633&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input',
@@ -157,15 +157,15 @@ async function deploy() {
 
     // Fetch token bytecode & abi
     deploymentStep.value++;
-    const [ bytecode, abi, stdJson ] = await Promise.all([ // Parallel fetch
-        fetch('./bin/CustomERC20.bin').then(res => res.text()),
-        fetch('./bin/CustomERC20.abi').then(res => res.json()),
-        fetch('./bin/standard-output.json').then(res => res.json())
+    const [ stdJsonIn, stdJsonOut ] = await Promise.all([ // Parallel fetch
+        fetch('./standard-input.json').then(res => res.json()),
+        fetch('./standard-output.json').then(res => res.json())
     ]);
     
     // Deploy token
     deploymentStep.value++;
-    const factory = new ContractFactory(abi, bytecode, signer);
+    const customERC20Data = stdJsonOut["contracts"]["./contracts/CustomERC20.sol"]["CustomERC20"];
+    const factory = new ContractFactory(customERC20Data.abi, customERC20Data.evm.bytecode.object, signer);
 
     const contract = await factory.deploy();
     const address = contract.address;
@@ -214,18 +214,14 @@ async function deploy() {
     // Verify on etherscan
     deploymentStep.value++;
     await fetch(contractVerificationAPIs[await provider.getNetwork().then(({ chainId }) => chainId)], {
-            method: 'POST'
-            mode: 'cors',
+            method: 'POST',
             cache: 'no-cache',
-            credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            redirect: 'follow',
-            referrerPolicy: 'no-referrer',
-            body: contractVerificationAPIDatas[await provider.getNetwork().then(({ chainId }) => chainId)]
+            body: contractVerificationAPIData[await provider.getNetwork().then(({ chainId }) => chainId)]
                 .replace('{contract}', address)
-                .replace('{sourceCode}', encodeURIComponent(stdJson))
+                .replace('{sourceCode}', encodeURIComponent(stdJsonIn))
         }
     ).then(res => res.json()).then((data) => {
         const {result} = data;

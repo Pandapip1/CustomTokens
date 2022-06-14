@@ -7,7 +7,7 @@ export default {
   module: {
     rules: [
       { test: /\.vue$/, use: 'vue-loader' },
-      { test: /\.js$/, use: 'babel-loader' },
+      { test: /\.js$/, use: 'babel-loader', include: path.resolve(__dirname, 'src') },
       { test: /\.css$/, use: ['vue-style-loader', 'css-loader'] },
     ]
   }, plugins: [

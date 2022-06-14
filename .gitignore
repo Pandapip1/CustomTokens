@@ -3,3 +3,4 @@ node_modules
 .gitpod.yml
 package-lock.json
 dist
+solc-input-customerc20.json

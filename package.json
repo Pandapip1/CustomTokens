@@ -6,10 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "webpack": "webpack && cp -r img dist && cp -r contracts dist",
-    "compile-bin": "mkdir -p ./dist/bin && rm -f ./dist/bin/*.bin && ./solc --include-path node_modules/ --base-path . --bin contracts/CustomERC20.sol -o ./dist/bin",
-    "compile-abi": "mkdir -p ./dist/bin && rm -f ./dist/bin/*.abi && ./solc --include-path node_modules/ --base-path . --abi contracts/CustomERC20.sol -o ./dist/bin",
-    "compile-json": "mkdir -p ./dist/bin && rm -f ./dist/bin/standard-output.json && mkdir -p ./dist/bin && ./solt write contracts/CustomERC20.sol --npm -o dist/bin/standard-output.json",
-    "compile": "npm run compile-bin && npm run compile-abi && npm run compile-json",
+    "compile": "rm -f ./dist/standard-output.json && mkdir -p ./dist && ./solt write contracts/CustomERC20.sol --npm -o dist/standard-input.json && ./solc --standard-json dist/standard-input.json > dist/standard-output.json",
     "dist": "rm -rf ./dist && npm run webpack && npm run compile",
     "dev": "npm run dist && lite-server"
   },
