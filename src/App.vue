@@ -29,7 +29,8 @@ const token = ref({
     },
     deployment: {
         tx: "",
-        contract: ""
+        contract: "",
+        verified: false
     },
 });
 const deploymentStep = ref(0);
@@ -64,12 +65,6 @@ const onboard = Onboard({
             rpcUrl: 'https://bsc-dataseed3.binance.org/'
         },
         {
-            id: '0x64',
-            token: 'xDAI',
-            label: 'Gnosis Chain Mainnet',
-            rpcUrl: 'wss://rpc.gnosischain.com/wss'
-        },
-        {
             id: '0x3',
             token: 'tROP',
             label: 'Ethereum Ropsten Testnet',
@@ -99,7 +94,6 @@ const forwarders = {
     10: [ '0x67097a676FCb14dc0Ff337D0D1F564649aD94715', ],
     137: [ '0xdA78a11FD57aF7be2eDD804840eA7f4c2A38801d', ],
     56: [ '0xeB230bF62267E94e657b5cbE74bdcea78EB3a5AB', ],
-    100: [ '0x7eEae829DF28F9Ce522274D5771A6Be91d00E5ED', ],
     3: [ '0xeB230bF62267E94e657b5cbE74bdcea78EB3a5AB', ],
     4: [ '0x83A54884bE4657706785D7309cf46B58FE5f6e8a', ],
     42: [ '0x7eEae829DF28F9Ce522274D5771A6Be91d00E5ED', ],
@@ -110,7 +104,6 @@ const txExplorerUrls = {
     10: 'https://optimistic.etherscan.io/tx/',
     137: 'https://polygonscan.io/tx/',
     56: 'https://bscscan.com/tx/',
-    100: 'https://blockscout.com/tx/',
     3: 'https://ropsten.etherscan.io/tx/',
     4: 'https://rinkeby.etherscan.io/tx/',
     42: 'https://kovan.etherscan.io/tx/'
@@ -121,21 +114,32 @@ const contractTrackerUrls = {
     10: 'https://optimistic.etherscan.io/token/',
     137: 'https://polygonscan.io/token/',
     56: 'https://bscscan.com/token/',
-    100: 'https://blockscout.com/token/',
     3: 'https://ropsten.etherscan.io/token/',
     4: 'https://rinkeby.etherscan.io/token/',
     42: 'https://kovan.etherscan.io/token/'
 };
 
+
 const contractVerificationAPIs = {
-    1: 'https://etherscan.io/tx/',
-    10: 'https://optimistic.etherscan.io/tx/',
-    137: 'https://polygonscan.io/tx/',
-    56: 'https://bscscan.com/tx/',
-    100: 'https://blockscout.com/tx/',
-    3: 'https://ropsten.etherscan.io/tx/',
-    4: 'https://rinkeby.etherscan.io/tx/',
-    42: 'https://kovan.etherscan.io/tx/'
+    1: 'https://api.etherscan.io/api',
+    10: 'https://api-optimistic.etherscan.io/api',
+    137: 'https://api.polygonscan.com/api',
+    56: 'https://api.bscscan.com/api',
+    3: 'https://api-ropsten.etherscan.io/api',
+    4: 'https://api-rinkeby.etherscan.io/api',
+    42: 'https://api-kovan.etherscan.io/api',
+};
+
+// if you are a developer considering stealing the API key here, then go away, and you are why we can't have nice things.
+
+const contractVerificationAPIDatas = {
+    1: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}',
+    10: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input',
+    137: 'apikey=JY1MU9UFEHYD9JJ9PJDUWDT1PNX49V2633&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input',
+    56: 'apikey=N88F83B7U9WEN67M7NUG9RNA2VQVYE7V6U&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input',
+    3: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecod&codeformat=solidity-standard-json-input',
+    4: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input',
+    42: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input',
 };
 
 
@@ -153,9 +157,10 @@ async function deploy() {
 
     // Fetch token bytecode & abi
     deploymentStep.value++;
-    const [ bytecode, abi ] = await Promise.all([ // Parallel fetch
-        fetch('https://pandapip1.github.io/CustomTokens/bin/bytecode/contracts_CustomERC20_sol_CustomERC20.bin').then(res => res.text()),
-        fetch('https://pandapip1.github.io/CustomTokens/bin/abi/contracts_CustomERC20_sol_CustomERC20.abi').then(res => res.json())
+    const [ bytecode, abi, stdJson ] = await Promise.all([ // Parallel fetch
+        fetch('./bin/CustomERC20.bin').then(res => res.text()),
+        fetch('./bin/CustomERC20.abi').then(res => res.json()),
+        fetch('./bin/standard-output.json').then(res => res.json())
     ]);
     
     // Deploy token
@@ -208,7 +213,29 @@ async function deploy() {
 
     // Verify on etherscan
     deploymentStep.value++;
-    // TODO: Verify on etherscan
+    await fetch(contractVerificationAPIs[await provider.getNetwork().then(({ chainId }) => chainId)], {
+            method: 'POST'
+            mode: 'cors',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            redirect: 'follow',
+            referrerPolicy: 'no-referrer',
+            body: contractVerificationAPIDatas[await provider.getNetwork().then(({ chainId }) => chainId)]
+                .replace('{contract}', address)
+                .replace('{sourceCode}', encodeURIComponent(stdJson))
+        }
+    ).then(res => res.json()).then((data) => {
+        const {result} = data;
+        if (result === '1') {
+            token.value.deployment.verified = true;
+        } else {
+            token.value.deployment.verified = false;
+        }
+        console.log(data);
+    }).catch(console.error);
 
     // Show result
     deploymentStep.value++;
