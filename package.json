@@ -6,9 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "webpack": "webpack && cp -r img dist && cp -r contracts dist",
-    "compile-bytecode": "rm -rf ./dist/bin/bytecode && mkdir -p ./dist/bin/bytecode && npx solc --include-path node_modules/ --base-path . --bin contracts/CustomERC20.sol -o ./dist/bin/bytecode",
-    "compile-abi": "rm -rf ./dist/bin/abi && mkdir -p ./dist/bin/abi && npx solc --include-path node_modules/ --base-path . --abi contracts/CustomERC20.sol -o ./dist/bin/abi",
-    "compile-json": "rm -rf ./dist/bin/json && mkdir -p ./dist/bin/json && npx solc --include-path node_modules/ --base-path . --standard-json contracts/CustomERC20.sol -o ./dist/bin/json",
+    "compile-bytecode": "rm -rf ./dist/bin/bytecode && mkdir -p ./dist/bin/bytecode && ./solc --include-path node_modules/ --base-path . --bin contracts/CustomERC20.sol -o ./dist/bin/bytecode",
+    "compile-abi": "rm -rf ./dist/bin/abi && mkdir -p ./dist/bin/abi && ./solc --include-path node_modules/ --base-path . --abi contracts/CustomERC20.sol -o ./dist/bin/abi",
+    "compile-json": "rm -f ./dist/bin/standard-output.json && mkdir -p ./dist/bin && ./solt write contracts/CustomERC20.sol --npm -o dist/bin/standard-output.json",
     "compile": "npm run compile-bytecode && npm run compile-abi && npm run compile-json",
     "dist": "rm -rf ./dist && npm run webpack && npm run compile",
     "dev": "npm run dist && lite-server"
@@ -41,7 +41,6 @@
     "css-loader": "^6.7.1",
     "html-webpack-plugin": "^5.5.0",
     "node-polyfill-webpack-plugin": "^1.1.4",
-    "solc": "^0.8.13",
     "surya": "^0.4.6",
     "vue-loader": "^17.0.0",
     "vue-style-loader": "^4.1.3",
