@@ -201,9 +201,9 @@ async function deploy() {
         
         // Redistribution Properties
         contract.interface.encodeFunctionData('setAmountTransferred', [`${10 ** 18 - token.value.redist.fee * (10 ** 16)}`]),
-        contract.interface.encodeFunctionData('setDistributionForHolders', [`${token.value.redist.holder * token.value.redist.fee * (10 ** 14)}`]),
+        contract.interface.encodeFunctionData('setDistributionForHolders', [`${token.value.redist.holder * (10 ** 16)}`]),
         ...token.value.redist.addresses.map(
-            ({ addr, amt }) => contract.interface.encodeFunctionData('setDistributionForAddress', [addr, `${amt * token.value.redist.fee * (10 ** 14)}`])
+            ({ addr, amt }) => contract.interface.encodeFunctionData('setDistributionForAddress', [addr, `${amt * (10 ** 16)}`])
         ),
         
         // Initial Balances
@@ -263,8 +263,8 @@ async function deploy() {
                 <div class="d-flex align-items-start">
                     <div class="nav flex-column nav-pills me-3" id="v-pills-tab" role="tablist" aria-orientation="vertical">
                         <button class="nav-link active" id="v-pills-meta-tab" data-bs-toggle="pill" data-bs-target="#v-pills-meta" type="button" role="tab" aria-controls="v-pills-meta" aria-selected="true" v-bind:disabled="deploymentStep != 0" v-bind:class="{ disabled: deploymentStep != 0 }">Metadata</button>
-                        <button class="nav-link" id="v-pills-redist-tab" data-bs-toggle="pill" data-bs-target="#v-pills-redist" type="button" role="tab" aria-controls="v-pills-redist" aria-selected="false" v-bind:disabled="!token.meta.symbol || !token.meta.name || deploymentStep != 0" v-bind:class="{ disabled: !token.meta.symbol || !token.meta.name || deploymentStep != 0 }">Redistribution</button>
                         <button class="nav-link" id="v-pills-supply-tab" data-bs-toggle="pill" data-bs-target="#v-pills-supply" type="button" role="tab" aria-controls="v-pills-supply" aria-selected="false" v-bind:disabled="!token.meta.symbol || !token.meta.name || deploymentStep != 0" v-bind:class="{ disabled: !token.meta.symbol || !token.meta.name || deploymentStep != 0 }">Initial Supply</button>
+                        <button class="nav-link" id="v-pills-redist-tab" data-bs-toggle="pill" data-bs-target="#v-pills-redist" type="button" role="tab" aria-controls="v-pills-redist" aria-selected="false" v-bind:disabled="!token.meta.symbol || !token.meta.name || deploymentStep != 0" v-bind:class="{ disabled: !token.meta.symbol || !token.meta.name || deploymentStep != 0 }">Redistribution</button>
                         <button class="nav-link" id="v-pills-deploy-tab" data-bs-toggle="pill" data-bs-target="#v-pills-deploy" type="button" role="tab" aria-controls="v-pills-deploy" aria-selected="false" v-bind:disabled="!token.meta.symbol || !token.meta.name || !token.supply.length" v-bind:class="{ disabled: !token.meta.symbol || !token.meta.name || !token.supply.length }">Deploy</button>
                     </div>
                     <div class="tab-content w-100" id="v-pills-tabContent">
@@ -273,6 +273,27 @@ async function deploy() {
                                 <input type="text" aria-label="Name" class="form-control" placeholder="Name (e.g. My Epic Token)" v-model="token.meta.name">
                                 <input type="text" aria-label="Symbol" class="form-control" placeholder="Symbol (e.g MYTOKEN)" v-model="token.meta.symbol">
                                 <input type="text" aria-label="Decimals" class="form-control" readonly value="18">
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="v-pills-supply" role="tabpanel" aria-labelledby="v-pills-supply-tab">
+                            <div class="container">
+                                <div class="row" v-for="(item, index) in token.supply" v-bind:key="item.addr">
+                                    <div class="col" style="vertical-align: middle;">
+                                        {{ token.supply[index].addr }}
+                                    </div>
+                                    <div class="col-md-auto" style="vertical-align: middle;">
+                                        {{ token.supply[index].amt }} {{ token.meta.symbol }}
+                                    </div>
+                                    <div class="col-md-auto" style="vertical-align: middle;">
+                                        <a href="#" v-on:click="token.supply.splice(index, 1)">Remove</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <input type="text" class="form-control" v-model="token.tempSupply.addr" placeholder="Ethereum Address (0x000...)">
+                                <input type="number" class="form-control" v-model="token.tempSupply.amt" placeholder="Initial Supply (e.g. 100000)">
+                                <span class="input-group-text">{{ token.meta.symbol }}</span>
+                                <button class="btn btn-outline-primary" v-on:click="token.supply.push({ addr: token.tempSupply.addr, amt: token.tempSupply.amt })">Add</button>
                             </div>
                         </div>
                         <div class="tab-pane fade" id="v-pills-redist" role="tabpanel" aria-labelledby="v-pills-redist-tab">
@@ -309,34 +330,13 @@ async function deploy() {
                                         </div>
                                     </div>
                                 </div>
-                                <div class="form-check" v-if="100 != token.redist.addresses.reduce((previousValue, item) => (previousValue + item.amt), 0) + token.redist.holder">
+                                <!--<div class="form-check" v-if="100 != token.redist.addresses.reduce((previousValue, item) => (previousValue + item.amt), 0) + token.redist.holder">
                                     <br/>
                                     <input class="form-check-input" type="checkbox" id="supportDev" v-model="token.redist.supdev">
                                     <label class="form-check-label" for="supportDev">
                                         Support <a href="https://github.com/Pandapip1" target="_blank">the developer</a> with 0.5% of the amount that would usually be burnt
                                     </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="tab-pane fade" id="v-pills-supply" role="tabpanel" aria-labelledby="v-pills-supply-tab">
-                            <div class="container">
-                                <div class="row" v-for="(item, index) in token.supply" v-bind:key="item.addr">
-                                    <div class="col" style="vertical-align: middle;">
-                                        {{ token.supply[index].addr }}
-                                    </div>
-                                    <div class="col-md-auto" style="vertical-align: middle;">
-                                        {{ token.supply[index].amt }} {{ token.meta.symbol }}
-                                    </div>
-                                    <div class="col-md-auto" style="vertical-align: middle;">
-                                        <a href="#" v-on:click="token.supply.splice(index, 1)">Remove</a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="input-group">
-                                <input type="text" class="form-control" v-model="token.tempSupply.addr" placeholder="Ethereum Address (0x000...)">
-                                <input type="number" class="form-control" v-model="token.tempSupply.amt" placeholder="Initial Supply (e.g. 100000)">
-                                <span class="input-group-text">{{ token.meta.symbol }}</span>
-                                <button class="btn btn-outline-primary" v-on:click="token.supply.push({ addr: token.tempSupply.addr, amt: token.tempSupply.amt })">Add</button>
+                                </div>-->
                             </div>
                         </div>
                         <div class="tab-pane fade" id="v-pills-deploy" role="tabpanel" aria-labelledby="v-pills-deploy-tab">

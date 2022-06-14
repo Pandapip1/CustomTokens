@@ -163,10 +163,7 @@ contract CustomERC20 is Multicall, Ownable, ERC2771Context {
     {
         return
             balances[_holder] +
-            _getTrueDistributionAmount(
-                privateDistributionAmount,
-                privateDistribution[_holder]
-            ) -
+            privateDistributionAmount * privateDistribution[_holder] / totalPrivateDistribution -
             balanceDebts[_holder];
     }
 
