@@ -151,13 +151,13 @@ const contractVerificationAPIs = {
 // if you are a developer considering stealing the API key here, then go away, and you are why we can't have nice things.
 
 const contractVerificationAPIData = {
-    1: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}',
-    10: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}',
-    137: 'apikey=JY1MU9UFEHYD9JJ9PJDUWDT1PNX49V2633&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}',
-    56: 'apikey=N88F83B7U9WEN67M7NUG9RNA2VQVYE7V6U&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}',
-    3: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecod&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}',
-    4: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}',
-    42: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}',
+    1: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}&compilerversion=v0.8.14+commit.80d49f37&licenseType=3',
+    10: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}&compilerversion=v0.8.14+commit.80d49f37&licenseType=3',
+    137: 'apikey=JY1MU9UFEHYD9JJ9PJDUWDT1PNX49V2633&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}&compilerversion=v0.8.14+commit.80d49f37&licenseType=3',
+    56: 'apikey=N88F83B7U9WEN67M7NUG9RNA2VQVYE7V6U&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}&compilerversion=v0.8.14+commit.80d49f37&licenseType=3',
+    3: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecod&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}&compilerversion=v0.8.14+commit.80d49f37&licenseType=3',
+    4: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}&compilerversion=v0.8.14+commit.80d49f37&licenseType=3',
+    42: 'apikey=ISSFYDUIUBG6Q4RNPD36DZXBXZRMBC3HDR&module=contract&action=verifysourcecode&codeformat=solidity-standard-json-input&contractaddress={address}&sourceCode={sourceCode}&compilerversion=v0.8.14+commit.80d49f37&licenseType=3',
 };
 
 
