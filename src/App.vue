@@ -9,8 +9,6 @@ import injectedModule from '@web3-onboard/injected-wallets';
 import walletConnectModule from '@web3-onboard/walletconnect';
 import trezorModule from '@web3-onboard/trezor';
 import ledgerModule from '@web3-onboard/ledger';
-import torusModule from '@web3-onboard/torus';
-import portisModule from '@web3-onboard/portis';
 
 const token = ref({
     meta: {
@@ -54,8 +52,6 @@ const onboard = Onboard({
             appUrl: window.location.href
         }),
         ledgerModule(),
-        torusModule(),
-        portisModule({ apiKey: '23d4cdc2-c65f-4815-9457-4f2b354dbf7f' })
     ],
     chains: [
         {
