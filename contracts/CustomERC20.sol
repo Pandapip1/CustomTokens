@@ -197,7 +197,7 @@ contract CustomERC20 is Multicall, Ownable, ERC2771Context {
         initialized
     {
         require(
-            _getTrueBalance(_from) > _amount,
+            _getTrueBalance(_from) >= _amount,
             "User doesn't have enough balance"
         );
 
@@ -246,7 +246,6 @@ contract CustomERC20 is Multicall, Ownable, ERC2771Context {
         initialized
         returns (uint256)
     {
-        // Can't be simplified :(
         return (_amount * (10**18)) / (holderDistributionAmount + 10**18);
     }
 
