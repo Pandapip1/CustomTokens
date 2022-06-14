@@ -201,9 +201,9 @@ async function deploy() {
         
         // Redistribution Properties
         contract.interface.encodeFunctionData('setAmountTransferred', [`${10 ** 18 - token.value.redist.fee * (10 ** 16)}`]),
-        contract.interface.encodeFunctionData('setDistributionForHolders', [`${token.value.redist.holder * (10 ** 16)}`]),
+        contract.interface.encodeFunctionData('setDistributionForHolders', [`${token.value.redist.holder * token.value.redist.fee * (10 ** 14)}`]),
         ...token.value.redist.addresses.map(
-            ({ addr, amt }) => contract.interface.encodeFunctionData('setDistributionForAddress', [addr, `${amt * (10 ** 16)}`])
+            ({ addr, amt }) => contract.interface.encodeFunctionData('setDistributionForAddress', [addr, `${amt * token.value.redist.fee * (10 ** 14)}`])
         ),
         
         // Initial Balances
