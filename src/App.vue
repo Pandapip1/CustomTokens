@@ -200,7 +200,7 @@ async function deploy() {
         // Meta TX
         ...validForwarders.map(
             forwarder => contract.interface.encodeFunctionData('setForwarder', [forwarder, true])
-        )
+        ),
 
         // Renounce Ownership to activate token
         contract.interface.encodeFunctionData('renounceOwnership', [])
