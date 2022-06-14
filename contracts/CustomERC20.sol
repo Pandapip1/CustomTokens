@@ -12,26 +12,26 @@ contract CustomERC20 is Multicall, Ownable, ERC2771Context {
     using SafeCast for *;
 
     // Config
-    string public _name;
-    string public _symbol;
+    string public tokenName;
+    string public tokenSymbol;
 
-    mapping(address => uint256) public _privateDistribution;
-    uint256 public _totalPrivateDistribution;
-    uint256 public _holderDistribution;
-    uint256 public _transferDistribution;
+    mapping(address => uint256) public privateDistribution;
+    uint256 public totalPrivateDistribution;
+    uint256 public holderDistribution;
+    uint256 public transferDistribution;
 
     // State
-    mapping(address => uint256) public _balances; // Standard ERC20 stuff
-    mapping(address => uint256) public _balanceDebts;
-    mapping(address => mapping(address => uint256)) public _allowances; // More standard ERC20 stuff
-    uint256 public _totalSupply;
+    mapping(address => uint256) public balances; // Standard ERC20 stuff
+    mapping(address => uint256) public balanceDebts;
+    mapping(address => mapping(address => uint256)) public allowances; // More standard ERC20 stuff
+    uint256 public trueTotalSupply;
 
-    uint256 public _holderDistributionAmount; // Amount to multiply final balances by
+    uint256 public holderDistributionAmount; // Amount to multiply final balances by
 
-    uint256 public _privateDistributionAmount; // Amount to add to balances
+    uint256 public privateDistributionAmount; // Amount to add to balances
 
     // MetaTX
-    mapping(address => bool) internal _forwarders;
+    mapping(address => bool) internal forwarders;
 
     // Modifiers
     modifier initialized() {
@@ -43,207 +43,211 @@ contract CustomERC20 is Multicall, Ownable, ERC2771Context {
     constructor() ERC2771Context(address(0)) {}
 
     // Initialization Functions
-    function setName(string memory newName) public onlyOwner {
-        _name = newName;
+    function setName(string memory _name) public onlyOwner {
+        tokenName = _name;
     }
 
-    function setSymbol(string memory newSymbol) public onlyOwner {
-        _symbol = newSymbol;
+    function setSymbol(string memory _symbol) public onlyOwner {
+        tokenSymbol = _symbol;
     }
 
-    function setDistributionForAddress(address recipient, uint256 distribution)
+    function setDistributionForAddress(address _recipient, uint256 _distribution)
         public
         onlyOwner
     {
-        _totalPrivateDistribution += distribution;
-        _totalPrivateDistribution -= _privateDistribution[recipient];
+        totalPrivateDistribution += _distribution;
+        totalPrivateDistribution -= privateDistribution[_recipient];
 
-        _privateDistribution[recipient] = distribution;
+        privateDistribution[_recipient] = _distribution;
     }
 
-    function setDistributionForHolders(uint256 distribution) public onlyOwner {
-        _holderDistribution = distribution;
+    function setDistributionForHolders(uint256 _distribution) public onlyOwner {
+        holderDistribution = _distribution;
     }
 
-    function setAmountTransferred(uint256 distribution) public onlyOwner {
-        _transferDistribution = distribution;
+    function setAmountTransferred(uint256 _distribution) public onlyOwner {
+        transferDistribution = _distribution;
     }
 
-    function setBalance(address recipient, uint256 amount) public onlyOwner {
-        _totalSupply += amount;
-        _totalSupply -= _balances[recipient];
+    function setBalance(address _recipient, uint256 _amount) public onlyOwner {
+        trueTotalSupply += _amount;
+        trueTotalSupply -= balances[_recipient];
 
-        _balances[recipient] = amount;
+        balances[_recipient] = _amount;
     }
 
-    function setForwarder(address forwarder, bool isForwarder) public onlyOwner {
-        _forwarders[forwarder] = isForwarder;
+    function setForwarder(address _forwarder, bool _isForwarder) public onlyOwner {
+        forwarders[_forwarder] = _isForwarder;
     }
 
     // Custom Getters for Custom Initialization
     function name() public view returns (string memory) {
-        return _name;
+        return tokenName;
     }
 
     function symbol() public view returns (string memory) {
-        return _symbol;
+        return tokenSymbol;
+    }
+
+    function decimals() public pure returns (uint8) {
+        return 18;
+    }
+
+    // Custom Getters for ERC20 Properties
+    function totalSupply() public view returns (uint256) {
+        return _trueToVisible(trueTotalSupply);
+    }
+
+    function balanceOf(address _holder) public view returns (uint256 balance) {
+        return _trueToVisible(_getTrueBalance(_holder));
+    }
+
+    function allowance(address _holder, address _spender)
+        public
+        view
+        returns (uint256)
+    {
+        return allowances[_holder][_spender];
+    }
+
+    // Custom Methods for ERC20 Properties
+    function transfer(address _to, uint256 _value)
+        public
+        initialized
+        returns (bool)
+    {
+        _transferTrue(_msgSender(), _to, _visibleToTrue(_value));
+        return true;
+    }
+
+    function transferFrom(
+        address _from,
+        address _to,
+        uint256 _value
+    ) public initialized returns (bool) {
+        require(
+            allowances[_from][_msgSender()] >= _value,
+            "Not enough allowance"
+        );
+
+        allowances[_from][_msgSender()] -= _value;
+        _transferTrue(_from, _to, _visibleToTrue(_value));
+        return true;
+    }
+
+    function approve(address _spender, uint256 _value)
+        public
+        initialized
+        returns (bool)
+    {
+        allowances[_msgSender()][_spender] = _value;
+        return true;
     }
 
     // Helpers (these use "true tokens")
-    function _getTrueDistributionAmount(uint256 amount, uint256 scale)
+    function _getTrueDistributionAmount(uint256 _amount, uint256 _scale)
         internal
         pure
         returns (uint256)
     {
-        return (amount * scale) / (10**18);
+        return (_amount * _scale) / (10**18);
     }
 
-    function _getTrueBalance(address holder)
+    function _getTrueBalance(address _holder)
         internal
         view
         initialized
         returns (uint256)
     {
         return
-            _balances[holder] +
+            balances[_holder] +
             _getTrueDistributionAmount(
-                _privateDistributionAmount,
-                _privateDistribution[holder]
+                privateDistributionAmount,
+                privateDistribution[_holder]
             ) -
-            _balanceDebts[holder];
+            balanceDebts[_holder];
     }
 
-    function _distributeTruePrivate(uint256 amount) internal initialized {
-        _privateDistributionAmount += amount;
-        _totalSupply += amount;
+    function _distributeTruePrivate(uint256 _amount) internal initialized {
+        privateDistributionAmount += _amount;
+        trueTotalSupply += _amount;
     }
 
-    function _distributeTrueHolders(uint256 amount) internal initialized {
-        _holderDistributionAmount +=
-            (_holderDistributionAmount + 10**18) *
-            amount *
-            _totalSupply -
+    function _distributeTrueHolders(uint256 _amount) internal initialized {
+        holderDistributionAmount +=
+            (holderDistributionAmount + 10**18) *
+            _amount *
+            trueTotalSupply -
             10**18;
-        _totalSupply += amount;
+        trueTotalSupply += _amount;
     }
 
-    function _simplifyTrueDebts(address toSimplify) internal initialized {
-        if (_balances[toSimplify] > _balanceDebts[toSimplify]) {
-            _balances[toSimplify] -= _balanceDebts[toSimplify];
-            _balanceDebts[toSimplify] = 0;
+    function _simplifyTrueDebts(address _toSimplify) internal initialized {
+        if (balances[_toSimplify] > balanceDebts[_toSimplify]) {
+            balances[_toSimplify] -= balanceDebts[_toSimplify];
+            balanceDebts[_toSimplify] = 0;
         } else {
-            _balanceDebts[toSimplify] -= _balances[toSimplify];
-            _balances[toSimplify] = 0;
+            balanceDebts[_toSimplify] -= balances[_toSimplify];
+            balances[_toSimplify] = 0;
         }
     }
 
-    function _subtractTrueBalance(address from, uint256 amount)
+    function _subtractTrueBalance(address _from, uint256 _amount)
         internal
         initialized
     {
         require(
-            _getTrueBalance(from) > amount,
+            _getTrueBalance(_from) > _amount,
             "User doesn't have enough balance"
         );
 
-        _balanceDebts[from] += amount;
-        _totalSupply -= amount;
-        _simplifyTrueDebts(from);
+        balanceDebts[_from] += _amount;
+        trueTotalSupply -= _amount;
+        _simplifyTrueDebts(_from);
     }
 
-    function _addTrueBalance(address to, uint256 amount) internal initialized {
-        _balances[to] += amount;
-        _totalSupply += amount;
-        _simplifyTrueDebts(to);
+    function _addTrueBalance(address _to, uint256 _amount) internal initialized {
+        balances[_to] += _amount;
+        trueTotalSupply += _amount;
+        _simplifyTrueDebts(_to);
     }
 
     function _transferTrue(
-        address from,
-        address to,
-        uint256 amount
+        address _from,
+        address _to,
+        uint256 _amount
     ) internal initialized {
-        _subtractTrueBalance(from, amount);
+        _subtractTrueBalance(_from, _amount);
         _addTrueBalance(
-            to,
-            _getTrueDistributionAmount(amount, _transferDistribution)
+            _to,
+            _getTrueDistributionAmount(_amount, transferDistribution)
         );
         _distributeTruePrivate(
-            _getTrueDistributionAmount(amount, _totalPrivateDistribution)
+            _getTrueDistributionAmount(_amount, totalPrivateDistribution)
         );
         _distributeTrueHolders(
-            _getTrueDistributionAmount(amount, _holderDistribution)
+            _getTrueDistributionAmount(_amount, holderDistribution)
         );
     }
 
     // Helpers
-    function _trueToVisible(uint256 amount)
+    function _trueToVisible(uint256 _amount)
         internal
         view
         initialized
         returns (uint256)
     {
-        return _getTrueDistributionAmount(amount, _holderDistributionAmount);
+        return _getTrueDistributionAmount(_amount, holderDistributionAmount);
     }
 
-    function _visibleToTrue(uint256 amount)
+    function _visibleToTrue(uint256 _amount)
         internal
         view
         initialized
         returns (uint256)
     {
         // Can't be simplified :(
-        return (amount * (10**18)) / (_holderDistributionAmount + 10**18);
-    }
-
-    // Custom Getters for ERC20 Properties
-    function totalSupply() public view returns (uint256) {
-        return _trueToVisible(_totalSupply);
-    }
-
-    function balanceOf(address holder) public view returns (uint256 balance) {
-        return _trueToVisible(_getTrueBalance(holder));
-    }
-
-    function allowance(address holder, address spender)
-        public
-        view
-        returns (uint256 remaining)
-    {
-        return _allowances[holder][spender];
-    }
-
-    // Custom Methods for ERC20 Properties
-    function transfer(address to, uint256 value)
-        public
-        initialized
-        returns (bool success)
-    {
-        _transferTrue(_msgSender(), to, _visibleToTrue(value));
-        return true;
-    }
-
-    function transferFrom(
-        address from,
-        address to,
-        uint256 value
-    ) public initialized returns (bool success) {
-        require(
-            _allowances[from][_msgSender()] >= value,
-            "Not enough allowance"
-        );
-
-        _allowances[from][_msgSender()] -= value;
-        _transferTrue(from, to, _visibleToTrue(value));
-        return true;
-    }
-
-    function approve(address spender, uint256 value)
-        public
-        initialized
-        returns (bool success)
-    {
-        _allowances[_msgSender()][spender] = value;
-        return true;
+        return (_amount * (10**18)) / (holderDistributionAmount + 10**18);
     }
 
     // Overrides
@@ -267,6 +271,6 @@ contract CustomERC20 is Multicall, Ownable, ERC2771Context {
 
     // Meta TX custom forwarders
     function isTrustedForwarder(address forwarder) public view override returns (bool) {
-        return _forwarders[forwarder];
+        return forwarders[forwarder];
     }
 }
