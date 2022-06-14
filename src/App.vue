@@ -169,6 +169,8 @@ async function deploy() {
     const provider = new providers.Web3Provider(primaryWallet.provider);
     const signer = provider.getSigner();
 
+    const chainId = await provider.getNetwork().then(({ chainId }) => chainId);
+
     // Fetch token bytecode & abi
     deploymentStep.value++;
     const [ stdJsonIn, stdJsonOut ] = await Promise.all([ // Parallel fetch
@@ -183,7 +185,11 @@ async function deploy() {
 
     const contract = await factory.deploy();
     const address = contract.address;
-    token.value.deployment.tx = `${txExplorerUrls[await provider.getNetwork().then(({ chainId }) => chainId)]}${contract.deployTransaction.hash}`;
+    if (chainId in txExplorerUrls) {
+        token.value.deployment.tx = `${txExplorerUrls[chainId]}${contract.deployTransaction.hash}`;
+    } else {
+        token.value.deployment.tx = `#`;
+    }
 
     // Wait for transaction to be mined
     deploymentStep.value++;
@@ -192,7 +198,10 @@ async function deploy() {
     // Set token metadata
     deploymentStep.value++;
 
-    const validForwarders = forwarders[await provider.getNetwork().then(({ chainId }) => chainId)];
+    let validForwarders = forwarders[chainId];
+    if (!validForwarders) {
+        validForwarders = [];
+    }
 
     const tx = await contract.multicall(await Promise.all([
         // Metadata
@@ -219,7 +228,11 @@ async function deploy() {
         // Renounce Ownership to activate token
         contract.interface.encodeFunctionData('renounceOwnership', [])
     ]));
-    token.value.deployment.contract = `${txExplorerUrls[await provider.getNetwork().then(({ chainId }) => chainId)]}${tx.hash}`;
+    if (chainId in txExplorerUrls) {
+        token.value.deployment.tx = `${txExplorerUrls[chainId]}${tx.hash}`;
+    } else {
+        token.value.deployment.tx = `#`;
+    }
 
     // Wait for transaction to be mined
     deploymentStep.value++;
@@ -230,29 +243,49 @@ async function deploy() {
 
     // Verify on etherscan
     deploymentStep.value++;
-    await fetch(contractVerificationAPIs[await provider.getNetwork().then(({ chainId }) => chainId)], {
-            method: 'POST',
-            cache: 'no-cache',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: contractVerificationAPIData[await provider.getNetwork().then(({ chainId }) => chainId)]
-                .replace('{contract}', address)
-                .replace('{sourceCode}', encodeURIComponent(stdJsonIn))
-        }
-    ).then(res => res.json()).then((data) => {
-        const {result} = data;
-        if (result === '1') {
-            token.value.deployment.verified = true;
-        } else {
-            token.value.deployment.verified = false;
-        }
-        console.log(data);
-    }).catch(console.error);
+    if (chainId in contractVerificationAPIs) {
+        await fetch(contractVerificationAPIs[chainId], {
+                method: 'POST',
+                cache: 'no-cache',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: contractVerificationAPIData[chainId]
+                    .replace('{contract}', address)
+                    .replace('{sourceCode}', encodeURIComponent(stdJsonIn))
+            }
+        ).then(res => res.json()).then((data) => {
+            const {result} = data;
+            if (result === '1') {
+                token.value.deployment.verified = true;
+            } else {
+                token.value.deployment.verified = false;
+            }
+            console.log(data);
+        }).catch(console.error);
+    }
 
     // Show result
     deploymentStep.value++;
-    token.value.deployment.contract = `${contractTrackerUrls[await provider.getNetwork().then(({ chainId }) => chainId)]}${address}`;
+    if (chainId in contractTrackerUrls) {
+        token.value.deployment.contract = `${contractTrackerUrls[chainId]}${address}`;
+    } else {
+        token.value.deployment.contract = `#`;
+    }
+    
+    if (window.ethereum) {
+        await ethereum.request({
+            method: 'wallet_watchAsset',
+            params: {
+                type: 'ERC20',
+                options: {
+                    address,
+                    symbol: token.value.meta.symbol,
+                    decimals: 18,
+                },
+            },
+        });
+    }
 }
 </script>
 
