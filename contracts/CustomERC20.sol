@@ -40,7 +40,9 @@ contract CustomERC20 is Multicall, Ownable, ERC2771Context {
     }
 
     // Constructor
-    constructor() ERC2771Context(address(0)) {}
+    constructor() ERC2771Context(address(0)) {
+        holderDistributionAmount = 10 ** 18;
+    }
 
     // Initialization Functions
     function setName(string memory _name) public onlyOwner {
@@ -174,11 +176,7 @@ contract CustomERC20 is Multicall, Ownable, ERC2771Context {
     }
 
     function _distributeTrueHolders(uint256 _amount) internal initialized {
-        holderDistributionAmount +=
-            (holderDistributionAmount + 10**18) *
-            _amount /
-            trueTotalSupply -
-            10**18;
+        holderDistributionAmount *= (_amount + trueTotalSupply) / trueTotalSupply;
         trueTotalSupply += _amount;
     }
 
@@ -237,7 +235,7 @@ contract CustomERC20 is Multicall, Ownable, ERC2771Context {
         initialized
         returns (uint256)
     {
-        return (_amount * (holderDistributionAmount + 10**18)) / (10**18);
+        return (_amount * holderDistributionAmount) / (10**18);
     }
 
     function _visibleToTrue(uint256 _amount)
@@ -246,7 +244,7 @@ contract CustomERC20 is Multicall, Ownable, ERC2771Context {
         initialized
         returns (uint256)
     {
-        return (_amount * (10**18)) / (holderDistributionAmount + 10**18);
+        return (_amount * (10**18)) / holderDistributionAmount;
     }
 
     // Overrides
