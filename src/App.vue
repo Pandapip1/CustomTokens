@@ -201,6 +201,9 @@ async function deploy() {
         ...validForwarders.map(
             forwarder => contract.interface.encodeFunctionData('setForwarder', [forwarder, true])
         )
+
+        // Renounce Ownership to activate token
+        contract.interface.encodeFunctionData('renounceOwnership', [])
     ]));
     token.value.deployment.contract = `${txExplorerUrls[await provider.getNetwork().then(({ chainId }) => chainId)]}${tx.hash}`;
 

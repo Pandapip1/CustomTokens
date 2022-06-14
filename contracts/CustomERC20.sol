@@ -237,7 +237,7 @@ contract CustomERC20 is Multicall, Ownable, ERC2771Context {
         initialized
         returns (uint256)
     {
-        return _getTrueDistributionAmount(_amount, holderDistributionAmount);
+        return (_amount * (holderDistributionAmount + 10**18)) / (10**18);
     }
 
     function _visibleToTrue(uint256 _amount)
